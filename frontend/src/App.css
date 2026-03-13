@@ -104,10 +104,15 @@ body {
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
+.action-links {
+  display: flex;
+  gap: 8px;
+}
+
 .clear-link {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: var(--danger);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -117,6 +122,17 @@ body {
 }
 
 .clear-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.clear-link:last-child {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+}
+
+.clear-link:last-child:hover {
   background: var(--danger);
   color: white;
 }
