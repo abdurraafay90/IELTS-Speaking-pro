@@ -1,14 +1,25 @@
-# IELTS Speaking Practice Pro
+# IELTS Master Pro
 
 ## Why this exists?
-Finding a reliable website that can accurately score your IELTS speaking performance is challenging. Many existing tools are either paid, inaccurate, or only focus on pronunciation. This application was created to provide a free, high-quality alternative that uses advanced AI models to evaluate your speech based on official IELTS criteria: Fluency & Coherence, Lexical Resource, Grammatical Range & Accuracy, and Task Relevance.
+Finding a reliable platform that can accurately score your IELTS performance is challenging. Many existing tools are either paid, inaccurate, or only focus on pronunciation. This application was created to provide a free, high-quality alternative that uses advanced AI models to evaluate both your **Speaking** and **Writing** performance based on official IELTS criteria.
 
 ## Features
-- **Real-time Recording:** Record your speech directly in the browser.
-- **AI Transcription:** Uses OpenAI's `gpt-4o-mini-transcribe` for highly accurate speech-to-text.
-- **Criteria-based Scoring:** Get a detailed band score (out of 9.0) based on official IELTS standards.
-- **Detailed Feedback:** Understand your strengths and specific areas for improvement.
-- **Part 1, 2, & 3 Support:** Practice for all sections of the IELTS Speaking test.
+- **🎙️ IELTS Speaking:**
+  - **Real-time Recording:** Record your speech directly in the browser.
+  - **AI Transcription:** Uses OpenAI's `gpt-4o-mini-transcribe` for highly accurate speech-to-text.
+  - **Criteria-based Scoring:** Detailed band score (out of 9.0) for Fluency, Lexical Resource, and Grammar.
+  - **Listen Back:** Audio playback feature to review your own recordings.
+- **✍️ IELTS Writing:**
+  - **Essay Evaluation:** Submit Task 2 essays for instant AI feedback.
+  - **Task-specific Scoring:** Evaluates Task Response, Cohesion, Lexical Resource, and Grammatical Accuracy.
+  - **Word Count Tracking:** Real-time word count monitoring for your essays.
+- **🛠️ Integrated API Configuration:**
+  - **Sidebar Settings:** Configure your OpenAI API key directly within the app's sidebar.
+  - **Persistent Settings:** Your API key is securely saved to the `.env` file for future sessions.
+- **🌓 Modern UI:**
+  - **Collapsible Sidebar:** Toggle the sidebar to maximize your workspace.
+  - **Glassmorphism Design:** A beautiful, modern interface with smooth animations and dark mode support.
+  - **Export Results:** Download your speaking transcripts and writing evaluations as text reports.
 
 ## Prerequisites
 - [Node.js](https://nodejs.org/) (v16+)
@@ -19,8 +30,8 @@ Finding a reliable website that can accurately score your IELTS speaking perform
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/ielts-speaking-pro.git
-cd ielts-speaking-pro
+git clone https://github.com/your-username/ielts-master-pro.git
+cd ielts-master-pro
 ```
 
 ### 2. Setup Backend
@@ -34,11 +45,6 @@ venv\Scripts\activate
 source venv/bin/activate
 
 pip install -r requirements.txt
-```
-
-Create a `.env` file in the `backend` folder and add your OpenAI API key:
-```env
-OPENAI_API_KEY=your_actual_api_key_here
 ```
 
 ### 3. Setup Frontend
@@ -75,12 +81,10 @@ run_app.bat
    *The application will open automatically on http://localhost:3000*
 
 ## How to Practice
-1. Select the IELTS Part (Part 1, 2, or 3).
-2. Paste the question or cue card you want to answer.
-3. Click "Start Recording" and speak.
-4. Click "Stop Recording" once you've finished.
-5. Wait for the AI to transcribe and evaluate your response.
-6. Review your Band Score and suggestions for improvement!
+1. **Configure API:** Open the sidebar, enter your OpenAI API key, and click "Save".
+2. **Speaking:** Select a Part (1, 2, or 3), record your response, and get a detailed band score.
+3. **Writing:** Enter the essay prompt, type your response, and submit for a comprehensive evaluation.
+4. **Improve:** Review the "Areas for Improvement" and "Suggested Answer" sections to refine your skills.
 
 ---
-*Created for IELTS aspirants to provide accessible and reliable feedback on their speaking journey.*
+*Created for IELTS aspirants to provide accessible and reliable feedback on their journey to success.*
