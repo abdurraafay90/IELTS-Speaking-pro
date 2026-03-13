@@ -78,18 +78,19 @@ async def score_transcript(transcript: str, question: str, ielts_part: str, syst
         max_retries = 3
         
         for attempt in range(max_retries):
-            # Use OpenAI API to score the transcript
             response = client.chat.completions.create(
                 model="gpt-5-nano",
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "developer", "content": system_prompt},
                     {"role": "user", "content": f"CONTEXT: IELTS {ielts_part}\nQuestion: {question}\n\nTRANSCRIPT:\n{transcript}\n\nPlease evaluate."}
                 ],
-                max_tokens=2000
+                max_completion_tokens=4000
             )
 
-            # Log the full response object for debugging
-            logger.info(f"Attempt {attempt + 1}: Full Response type: {type(response)}")
+            # Log details for debugging
+            finish_reason = response.choices[0].finish_reason
+            usage = getattr(response, 'usage', None)
+            logger.info(f"Attempt {attempt + 1}: finish_reason={finish_reason}, usage={usage}")
             
             evaluation = response.choices[0].message.content
             
@@ -97,12 +98,13 @@ async def score_transcript(transcript: str, question: str, ielts_part: str, syst
                 # We got a valid response, break out of the retry loop
                 break
                 
-            logger.warning(f"Attempt {attempt + 1}: Model returned an empty evaluation string. Retrying...")
+            logger.warning(f"Attempt {attempt + 1}: Model returned an empty evaluation string (Finish Reason: {finish_reason}). Retrying...")
             await asyncio.sleep(1) # Wait a second before retrying
         
         if evaluation is None or str(evaluation).strip() == "":
             logger.error("All retries failed. Model consistently returned empty responses.")
-            evaluation = f"Error: The model 'gpt-5-nano' processed the request {max_retries} times but consistently returned an empty response. This usually means the prompt was rejected by a safety filter or the model encountered an internal generation error. \n\nRaw Model Output: '{response.choices[0].message.content}'"
+            last_finish_reason = response.choices[0].finish_reason if 'response' in locals() else "unknown"
+            evaluation = f"Error: The model 'gpt-5-nano' processed the request {max_retries} times but consistently returned an empty response (Last Finish Reason: {last_finish_reason}). This usually means the prompt was rejected by a safety filter, tokens were exhausted by reasoning, or the model encountered an internal generation error."
         else:
             logger.info(f"Successfully generated evaluation. Length: {len(evaluation)} characters.")
 
