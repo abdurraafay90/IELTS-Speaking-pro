@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Project specific
+backend/uploads/
+backend/transcripts/
+backend/scores/
+backend/venv/
+frontend/node_modules/
+frontend/build/
+.DS_Store
+*.webm
+*.txt
+*.json
+!package.json
+!package-lock.json
+!requirements.txt
+!.gitignore
+!*.js
+!*.css
+!*.html
+!*.md
+!*.bat
+!*.sh
+
+# Ignore the redundant folders if they still exist
+ielts-speak-app/
