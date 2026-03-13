@@ -10,6 +10,7 @@ function App() {
   const [recorderInfo, setRecorderInfo] = useState('');
   const [timer, setTimer] = useState(0);
   const [duration, setDuration] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
   const [ieltsPart, setIeltsPart] = useState('Part 1');
   const timerIntervalRef = useRef(null);
   const timerRef = useRef(0);
@@ -92,6 +93,7 @@ Always format your response exactly as follows:
       setTimer(0);
       timerRef.current = 0;
       setDuration(null);
+      setAudioUrl(null);
       timerIntervalRef.current = setInterval(() => {
         timerRef.current += 1;
         setTimer(timerRef.current);
@@ -108,6 +110,10 @@ Always format your response exactly as follows:
         // Stop timer and set duration
         clearInterval(timerIntervalRef.current);
         setDuration(timerRef.current);
+        
+        // Create audio URL for playback
+        const url = URL.createObjectURL(audioBlobRef.current);
+        setAudioUrl(url);
 
         setStatus('Processing transcription and evaluation...');
         const result = await sendAudioForProcessing(audioBlobRef.current);
@@ -246,6 +252,13 @@ Always format your response exactly as follows:
           >
             {isRecording ? 'Stop Recording' : 'Start Recording'}
           </button>
+
+          {audioUrl && !isRecording && (
+            <div className="audio-playback-container">
+              <label>Listen back to your recording:</label>
+              <audio src={audioUrl} controls className="audio-player" />
+            </div>
+          )}
 
           <div className="status">{status}</div>
           <div className="recorder-info">{recorderInfo}</div>
