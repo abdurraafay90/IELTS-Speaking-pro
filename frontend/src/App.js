@@ -8,7 +8,18 @@ function App() {
   const [transcript, setTranscript] = useState('Transcript will appear here...');
   const [evaluation, setEvaluation] = useState('Evaluation will appear here...');
   const [recorderInfo, setRecorderInfo] = useState('');
+  const [timer, setTimer] = useState(0);
+  const [duration, setDuration] = useState(null);
   const [ieltsPart, setIeltsPart] = useState('Part 1');
+  const timerIntervalRef = useRef(null);
+  const timerRef = useRef(0);
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const [question, setQuestion] = useState('');
   const [systemPrompt, setSystemPrompt] = useState(`You are an expert, strict, and constructive English Language Speaking Examiner for international standardized proficiency tests. Your goal is to evaluate a candidate's transcribed spoken response to a specific question.
 
@@ -77,6 +88,15 @@ Always format your response exactly as follows:
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
+      // Reset and start timer
+      setTimer(0);
+      timerRef.current = 0;
+      setDuration(null);
+      timerIntervalRef.current = setInterval(() => {
+        timerRef.current += 1;
+        setTimer(timerRef.current);
+      }, 1000);
+
       mediaRecorderRef.current.ondataavailable = event => {
         audioChunksRef.current.push(event.data);
       };
@@ -84,6 +104,10 @@ Always format your response exactly as follows:
       mediaRecorderRef.current.onstop = async () => {
         audioBlobRef.current = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach(track => track.stop());
+
+        // Stop timer and set duration
+        clearInterval(timerIntervalRef.current);
+        setDuration(timerRef.current);
 
         setStatus('Processing transcription and evaluation...');
         const result = await sendAudioForProcessing(audioBlobRef.current);
@@ -213,6 +237,9 @@ Always format your response exactly as follows:
         </div>
 
         <div className="recorder-container">
+          <div className={`timer-display ${isRecording ? 'active' : ''}`}>
+            {isRecording ? formatTime(timer) : (duration ? `Duration: ${formatTime(duration)}` : '0:00')}
+          </div>
           <button
             className={`record-button ${isRecording ? 'recording' : ''}`}
             onClick={toggleRecording}
