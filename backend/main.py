@@ -80,7 +80,7 @@ async def score_transcript(transcript: str, question: str, ielts_part: str, syst
         for attempt in range(max_retries):
             # Use OpenAI API to score the transcript
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-5-nano",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"CONTEXT: IELTS {ielts_part}\nQuestion: {question}\n\nTRANSCRIPT:\n{transcript}\n\nPlease evaluate."}
