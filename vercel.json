@@ -2,14 +2,17 @@
   "version": 2,
   "functions": {
     "api/*.py": {
-      "maxDuration": 60,
-      "includeFiles": "frontend/build/**"
+      "maxDuration": 60
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -53,6 +53,8 @@ async def restore_vercel_path(request: Request, call_next):
 # Resolve Build Directory
 def resolve_build_dir():
     candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public"),
+        os.path.join(os.getcwd(), "public"),
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "build"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "build"),
         os.path.join(os.getcwd(), "frontend", "build"),
