@@ -40,6 +40,15 @@ def get_openai_client():
 
 app = FastAPI(title="IELTS Speaking Pro API (Local & Production)", version="2.0.0")
 
+@app.middleware("http")
+async def handle_vercel_rewrite(request: Request, call_next):
+    if request.scope.get("path") in ("/api/index.py", "/api/index"):
+        q_path = request.query_params.get("__path") or request.query_params.get("path")
+        if q_path:
+            clean = q_path.lstrip("/")
+            request.scope["path"] = f"/api/{clean}" if not clean.startswith("api/") else f"/{clean}"
+    return await call_next(request)
+
 
 # Resolve Build Directory
 def resolve_build_dir():
