@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 import httpx
 import os
@@ -39,6 +40,25 @@ def get_openai_client():
 
 app = FastAPI(title="IELTS Speaking Pro API (Local & Production)", version="2.0.0")
 
+# Resolve Build Directory
+def resolve_build_dir():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "build"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "build"),
+        os.path.join(os.getcwd(), "frontend", "build"),
+        os.path.join(os.getcwd(), "build"),
+    ]
+    for p in candidates:
+        if os.path.isdir(p) and os.path.exists(os.path.join(p, "index.html")):
+            return p
+    return candidates[0]
+
+BUILD_DIR = resolve_build_dir()
+STATIC_DIR = os.path.join(BUILD_DIR, "static")
+
+if os.path.isdir(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
@@ -74,6 +94,14 @@ def verify_access(
 
 
 @app.get("/")
+@app.get("/index.html")
+async def serve_index():
+    index_path = os.path.join(BUILD_DIR, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    return HTMLResponse("<h1>IELTS Speaking Pro</h1><p>Frontend is loading...</p>")
+
+
 @app.get("/api")
 async def root_status():
     return {
@@ -299,6 +327,23 @@ async def transcribe_and_score_endpoint(
     except Exception as e:
         logger.error(f"Process error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+@app.get("/{full_path:path}")
+async def serve_spa_frontend(full_path: str = ""):
+    clean = full_path.strip("/")
+    if clean.startswith("api/") or clean.startswith("docs") or clean.startswith("openapi.json"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    
+    direct_file = os.path.join(BUILD_DIR, clean)
+    if os.path.isfile(direct_file):
+        return FileResponse(direct_file)
+        
+    index_path = os.path.join(BUILD_DIR, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path, media_type="text/html")
+        
+    raise HTTPException(status_code=404, detail="Not Found")
 
 
 if __name__ == "__main__":
