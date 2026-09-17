@@ -5,10 +5,11 @@ This guide provides step-by-step instructions to deploy **IELTS Speaking Practic
 ---
 
 ## Architecture Summary
-- **Frontend:** React SPA built with glassmorphic dark theme, question bank, and speech analytics.
+- **Frontend:** React SPA built with glassmorphic dark theme, Cambridge IELTS practice test bank selector, Part 2 1-minute prep timer, and speech analytics.
 - **Backend:** Python Serverless API in `/api/index.py` running FastAPI on Vercel.
 - **Single Domain:** Vercel routes `/api/*` to the Python serverless function and all other traffic to the React application under the exact same domain. No CORS hurdles or multiple deployments needed.
-- **Security:** Gated with single sign-in password (`speaking30`). The backend rejects any requests that do not provide this password, protecting your OpenAI API credits from unauthorized public access.
+- **Credit Protection & Security:** Gated with single sign-in password (`speaking30`). Built-in hard 5-minute recording limit (frontend auto-stop at 300s and backend 15MB file ceiling) ensures candidates never leave the mic recording accidentally and exhaust your OpenAI credits.
+- **Expression & Stutter Checking:** The evaluation prompt actively audits continuity, filler words ('um', 'uh', 'like'), stutters, mid-sentence lags, and natural spoken expression.
 
 ---
 
@@ -17,8 +18,6 @@ This guide provides step-by-step instructions to deploy **IELTS Speaking Practic
 ### Step 1: Push Changes to GitHub
 Commit and push your updated repository to GitHub:
 ```bash
-git add .
-git commit -m "feat: upgrade to v2 with password gate, gpt-4o examiner, and vercel deployment"
 git push origin main
 ```
 
@@ -87,9 +86,10 @@ Within a few minutes:
 ## How Your Friend Uses the App
 
 1. Visit **`https://speaking.araafay.online`**.
-2. Enter the access password: **`speaking30`**.
-3. Select an IELTS Speaking section (Part 1, 2, or 3) or click **"🎲 Pick Random Question"**.
-4. Click **"Start Recording Response"** and speak into the microphone.
-5. Click **"Stop & Score Speaking"**.
-6. The AI transcribes the response, calculates Words-Per-Minute (WPM), and provides official British Council / IDP Band Scores with Band 8+ lexical upgrades and a native model answer!
-7. Click **"💾 Download Complete IELTS Report"** to save feedback as a Markdown document.
+2. Enter candidate name (e.g. Alex) and the access password: **`speaking30`**.
+3. Select an authentic Cambridge test (Cambridge 17–19 Tests 1–4) or switch between Part 1, 2, or 3.
+4. For Part 2, click **"⏱️ Start 1-Min Prep & Auto-Record"** to take notes with an 880Hz audio chime cue when time is up.
+5. Speak into the microphone (with automatic 5-minute cutoff protection).
+6. Click **"⏹️ Stop & Score Speaking"** (or let it auto-stop at 5 minutes).
+7. The AI transcribes the response, calculates Words-Per-Minute (WPM), diagnoses expressions/stutters/fillers, and provides official British Council / IDP Band Scores with Band 8+ lexical upgrades and a native model answer!
+8. Click **"💾 Download Complete IELTS Report"** to save feedback as a Markdown document.
