@@ -846,6 +846,109 @@ body {
   font-weight: 400;
 }
 
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.label-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+/* Gemini Examiner Persona Prompt Drawer */
+.prompt-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.prompt-toggle-btn {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prompt-toggle-btn:hover {
+  background: #313336;
+  color: var(--primary);
+  border-color: rgba(124, 172, 248, 0.4);
+  transform: translateY(-1px);
+}
+
+.prompt-editor-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+.prompt-editor-box label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.prompt-editor-box textarea {
+  width: 100%;
+  background: #1e1f20;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.88rem;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6;
+  resize: vertical;
+  transition: var(--transition-smooth);
+}
+
+.prompt-editor-box textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(124, 172, 248, 0.2);
+}
+
+.reset-prompt-btn {
+  align-self: flex-start;
+  background: #1e1f20;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.reset-prompt-btn:hover {
+  background: #313336;
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 /* ==========================================================================
    5. Part 2 Preparation Countdown Banner
    ========================================================================== */
@@ -1127,6 +1230,58 @@ body {
   cursor: not-allowed;
 }
 
+.part2-record-buttons-row {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.prep-trigger-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35) !important;
+}
+
+.record-direct-btn {
+  background: #282a2c !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+.record-direct-btn:hover {
+  background: #313336 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.prep-active-recorder-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.prep-active-badge {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+}
+
+.prep-active-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.skip-prep-btn {
+  background: linear-gradient(135deg, #ea4335 0%, #d93025 100%) !important;
+  box-shadow: 0 6px 20px rgba(234, 67, 53, 0.35) !important;
+}
+
 .audio-playback-container {
   width: 100%;
   max-width: 460px;
@@ -1178,6 +1333,71 @@ body {
   border-radius: 50%;
   border-top-color: var(--primary);
   animation: spin 0.8s linear infinite;
+}
+
+/* Live Metrics Grid (Gemini Style) */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: var(--transition-smooth);
+}
+
+.metric-card:hover {
+  border-color: rgba(124, 172, 248, 0.3);
+  transform: translateY(-2px);
+}
+
+.metric-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.metric-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.02em;
+}
+
+.metric-unit {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--primary);
+  margin-left: 4px;
+}
+
+.metric-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pace-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(40, 42, 44, 0.6);
+  border: 1px solid currentColor;
 }
 
 /* ==========================================================================
@@ -1244,11 +1464,42 @@ body {
 }
 
 .transcription-card,
-.evaluation-card {
+.evaluation-card,
+.transcript-box,
+.evaluation-box {
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-copy-btn {
+  background: #1e1f20;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.card-copy-btn:hover {
+  background: #313336;
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.display-area {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  white-space: pre-wrap;
 }
 
 .card-header {
@@ -1339,77 +1590,170 @@ body {
    ========================================================================== */
 .mic-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(12px);
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   padding: 20px;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.mic-modal-content {
+.mic-modal-card {
+  position: relative;
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(242, 139, 130, 0.4);
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 40px rgba(242, 139, 130, 0.15);
   border-radius: 28px;
-  padding: 36px 32px;
-  max-width: 480px;
+  max-width: 500px;
   width: 100%;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
   animation: scaleIn 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.mic-modal-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
+.modal-close-x {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: var(--transition-smooth);
 }
 
-.mic-modal-content h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0 0 12px;
+.modal-close-x:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
 }
 
-.mic-modal-content p {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin: 0 0 24px;
+.mic-modal-icon-wrapper {
+  position: relative;
+  margin-bottom: 20px;
 }
 
-.mic-modal-actions {
+.mic-modal-main-icon {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 16px rgba(242, 139, 130, 0.3));
+}
+
+.mic-modal-lock-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 1.5rem;
+}
+
+.mic-modal-card h3 {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 10px;
+}
+
+.mic-modal-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+
+.mic-steps-container {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px 20px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mic-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mic-step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #131314;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.mic-step-text {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+.mic-step-text strong {
+  color: var(--primary);
+}
+
+.mic-modal-buttons {
   display: flex;
   gap: 12px;
+  width: 100%;
   justify-content: center;
 }
 
-.mic-modal-btn-primary {
+.mic-modal-retry-btn {
   background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 12px 26px;
   border-radius: var(--radius-pill);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(66, 133, 244, 0.35);
+  transition: var(--transition-smooth);
 }
 
-.mic-modal-btn-secondary {
+.mic-modal-retry-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.mic-modal-dismiss-btn {
   background: var(--bg-input);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   padding: 12px 24px;
   border-radius: var(--radius-pill);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.mic-modal-dismiss-btn:hover {
+  background: #313336;
+  color: var(--text-main);
 }
 
 /* ==========================================================================
