@@ -75,6 +75,18 @@ def verify_access(
     return True
 
 
+@app.get("/")
+@app.get("/api")
+async def root_status():
+    return {
+        "status": "online",
+        "service": "IELTS Speaking Pro API",
+        "eval_model": OPENAI_EVAL_MODEL,
+        "transcribe_model": OPENAI_TRANSCRIBE_MODEL,
+        "docs": "/docs"
+    }
+
+
 @app.get("/api/health")
 @app.get("/health")
 async def health_check():

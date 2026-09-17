@@ -21,7 +21,6 @@ backend/transcripts/
 backend/scores/
 backend/venv/
 frontend/node_modules/
-frontend/build/
 .DS_Store
 *.webm
 *.txt
