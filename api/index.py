@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 import httpx
@@ -8,7 +8,8 @@ import os
 import io
 import json
 import logging
-from datetime import datetime
+import tempfile
+from datetime import datetime, timezone
 from typing import Optional
 try:
     from dotenv import load_dotenv
@@ -138,18 +139,97 @@ async def health_check():
     }
 
 
+IN_MEMORY_LOGINS = []
+
+def record_candidate_login(name: str, client_ip: str = "unknown", user_agent: str = ""):
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    clean_agent = user_agent.replace("\n", " ")[:60] if user_agent else "Browser"
+    entry = f"[{ts}] Candidate: {name} | IP: {client_ip} | Device: {clean_agent}\n"
+    
+    IN_MEMORY_LOGINS.append(entry)
+    logger.info(f"👤 [CANDIDATE_LOGIN] Name='{name}' | IP={client_ip} | Time={ts}")
+    
+    paths = [
+        os.path.join(tempfile.gettempdir(), "candidate_logins.txt"),
+        os.path.join(os.getcwd(), "candidate_logins.txt"),
+    ]
+    for p in paths:
+        try:
+            with open(p, "a", encoding="utf-8") as f:
+                f.write(entry)
+        except Exception:
+            pass
+
+def get_all_recorded_logins() -> str:
+    lines = list(IN_MEMORY_LOGINS)
+    paths = [
+        os.path.join(tempfile.gettempdir(), "candidate_logins.txt"),
+        os.path.join(os.getcwd(), "candidate_logins.txt"),
+    ]
+    for p in paths:
+        if os.path.isfile(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip() and line not in lines:
+                            lines.append(line)
+            except Exception:
+                pass
+    if not lines:
+        return "# Candidate Logins Log\n\nNo logins recorded yet.\n"
+    return "# Candidate Logins Log (IELTS Speaking Pro)\n\n" + "".join(lines)
+
+
 @app.post("/api/verify-password")
 @app.post("/verify-password")
 async def verify_password_endpoint(
-    payload: dict
+    payload: dict,
+    request: Request
 ):
     password = payload.get("password", "").strip()
+    username = payload.get("username", "").strip() or payload.get("name", "").strip()
     if password == APP_PASSWORD:
+        client_ip = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("user-agent", "")
+        candidate_name = username if username else "Anonymous Candidate"
+        record_candidate_login(candidate_name, client_ip, user_agent)
         return {"valid": True, "message": "Authenticated successfully"}
     return JSONResponse(
         status_code=401,
         content={"valid": False, "message": "Invalid access password"}
     )
+
+
+@app.post("/api/log-login")
+@app.post("/log-login")
+async def log_login_endpoint(payload: dict, request: Request):
+    password = payload.get("password", "").strip()
+    username = payload.get("username", "").strip() or payload.get("name", "").strip()
+    if password == APP_PASSWORD and username:
+        client_ip = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("user-agent", "")
+        record_candidate_login(username, client_ip, user_agent)
+        return {"logged": True, "candidate": username}
+    return JSONResponse(status_code=401, content={"logged": False, "message": "Invalid credentials"})
+
+
+@app.get("/api/logins")
+@app.get("/logins")
+async def get_logins_endpoint(
+    token: Optional[str] = None,
+    authorization: Optional[str] = Header(None)
+):
+    auth_token = token
+    if not auth_token and authorization:
+        parts = authorization.split(" ")
+        auth_token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else authorization
+        
+    if not auth_token or auth_token.strip() != APP_PASSWORD:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: Access to candidate logins requires valid password (e.g. ?token=speaking30)."
+        )
+    return PlainTextResponse(content=get_all_recorded_logins())
 
 
 async def transcribe_audio_stream(audio_bytes: bytes, filename: str) -> str:

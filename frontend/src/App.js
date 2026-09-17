@@ -105,27 +105,54 @@ function App() {
   const audioBlobRef = useRef(null);
 
   // Handle Authentication
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e?.preventDefault();
-    if (!loginUsername.trim()) {
+    const cleanUser = loginUsername.trim();
+    const cleanPass = loginPassword.trim();
+    if (!cleanUser) {
       setLoginError('Please enter your name or username.');
       return;
     }
-    if (!loginPassword.trim()) {
+    if (!cleanPass) {
       setLoginError('Please enter the access password.');
       return;
     }
 
-    // Default expected password is speaking30
-    if (loginPassword.trim() === 'speaking30') {
-      localStorage.setItem('ielts_auth_key', loginPassword.trim());
-      localStorage.setItem('ielts_username', loginUsername.trim());
-      setAuthToken(loginPassword.trim());
-      setUsername(loginUsername.trim());
-      setIsAuthenticated(true);
-      setLoginError('');
-    } else {
-      setLoginError('Incorrect password. Access is restricted.');
+    try {
+      // Authenticate with backend and record candidate login
+      const res = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: cleanPass,
+          username: cleanUser,
+        }),
+      });
+
+      if (res.ok) {
+        localStorage.setItem('ielts_auth_key', cleanPass);
+        localStorage.setItem('ielts_username', cleanUser);
+        setAuthToken(cleanPass);
+        setUsername(cleanUser);
+        setIsAuthenticated(true);
+        setLoginError('');
+        return;
+      } else {
+        setLoginError('Incorrect password. Access is restricted.');
+        return;
+      }
+    } catch (err) {
+      // Fallback offline verification if network issue
+      if (cleanPass === 'speaking30') {
+        localStorage.setItem('ielts_auth_key', cleanPass);
+        localStorage.setItem('ielts_username', cleanUser);
+        setAuthToken(cleanPass);
+        setUsername(cleanUser);
+        setIsAuthenticated(true);
+        setLoginError('');
+      } else {
+        setLoginError('Incorrect password. Access is restricted.');
+      }
     }
   };
 
@@ -617,7 +644,7 @@ ${evaluation}
           </form>
 
           <div className="login-footer">
-            <span>Powered by OpenAI GPT-4o & GPT-4o-Transcribe</span>
+            <span>Powered by OpenAI GPT-5.6-Luna & GPT-4o-Transcribe</span>
           </div>
         </div>
       </div>
@@ -638,6 +665,16 @@ ${evaluation}
             <div className="status-pill">
               <span className="pulsing-dot"></span> Authorized Access
             </div>
+            <a
+              href={`/api/logins?token=${encodeURIComponent(authToken || 'speaking30')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="signout-button"
+              style={{ textDecoration: 'none', marginLeft: '6px' }}
+              title="View all recorded candidate logins"
+            >
+              📋 Logins
+            </a>
             <button className="signout-button" onClick={handleLogout} title="Sign out and return to login screen">
               Sign Out
             </button>
