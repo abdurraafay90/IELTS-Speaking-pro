@@ -675,16 +675,6 @@ ${evaluation}
             <div className="status-pill">
               <span className="pulsing-dot"></span> Authorized Access
             </div>
-            <a
-              href={`/api/logins?token=${encodeURIComponent(authToken || 'speaking30')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="signout-button"
-              style={{ textDecoration: 'none', marginLeft: '6px' }}
-              title="View all recorded candidate logins"
-            >
-              📋 Logins
-            </a>
             <button className="signout-button" onClick={handleLogout} title="Sign out and return to login screen">
               Sign Out
             </button>

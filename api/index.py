@@ -216,8 +216,12 @@ async def log_login_endpoint(payload: dict, request: Request):
 
 @app.get("/api/logins")
 @app.get("/logins")
+@app.get("/api/download-logins")
+@app.get("/download-logins")
 async def get_logins_endpoint(
+    request: Request,
     token: Optional[str] = None,
+    download: Optional[bool] = False,
     authorization: Optional[str] = Header(None)
 ):
     auth_token = token
@@ -230,7 +234,12 @@ async def get_logins_endpoint(
             status_code=401,
             detail="Unauthorized: Access to candidate logins requires valid password (e.g. ?token=speaking30)."
         )
-    return PlainTextResponse(content=get_all_recorded_logins())
+    content = get_all_recorded_logins()
+    headers = {}
+    # If accessed via download endpoint or download param, prompt browser download
+    if download or "download-logins" in request.url.path:
+        headers["Content-Disposition"] = 'attachment; filename="candidate_logins.txt"'
+    return PlainTextResponse(content=content, headers=headers)
 
 
 async def transcribe_audio_stream(audio_bytes: bytes, filename: str) -> str:
