@@ -1692,12 +1692,14 @@ body {
   box-shadow: 0 0 15px var(--primary-glow);
 }
 
+.question-nav-footer,
 .question-nav-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding-top: 4px;
+  padding: 10px 4px 4px 4px;
+  width: 100%;
 }
 
 .btn-nav-prev,
@@ -1714,6 +1716,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .btn-nav-prev:hover:not(:disabled),
@@ -1722,6 +1725,12 @@ body {
   border-color: var(--primary);
   color: white;
   transform: translateY(-1px);
+}
+
+.btn-nav-prev:focus-visible,
+.btn-nav-next:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .btn-nav-prev:disabled,
@@ -1737,10 +1746,18 @@ body {
 }
 
 .question-nav-indicator {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #94a3b8;
   font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Part 2 Cue Card Card */
