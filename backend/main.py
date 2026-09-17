@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Header, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -39,6 +39,16 @@ def get_openai_client():
     )
 
 app = FastAPI(title="IELTS Speaking Pro API (Local & Production)", version="2.0.0")
+
+# Restore original URL path on Vercel rewrites
+@app.middleware("http")
+async def restore_vercel_path(request: Request, call_next):
+    matched = request.headers.get("x-matched-path")
+    if matched:
+        clean_matched = matched.split("?")[0]
+        if clean_matched:
+            request.scope["path"] = clean_matched
+    return await call_next(request)
 
 # Resolve Build Directory
 def resolve_build_dir():
