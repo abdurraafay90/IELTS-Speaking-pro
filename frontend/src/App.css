@@ -1207,3 +1207,188 @@ body {
   background: rgba(255, 255, 255, 0.12);
   color: white;
 }
+
+/* ==========================================================================
+   9. Part 2 Preparation Banner & Auto-Record Controls
+   ========================================================================== */
+.part2-prep-banner {
+  width: 100%;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-top: 6px;
+  transition: all 0.3s ease;
+}
+
+.part2-prep-banner.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+}
+
+.prep-banner-idle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.prep-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.prep-banner-icon {
+  font-size: 1.8rem;
+}
+
+.prep-banner-info strong {
+  color: #fef3c7;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.prep-banner-info p {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  margin: 3px 0 0;
+}
+
+.prep-start-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.prep-start-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.prep-banner-counting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.prep-countdown-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prep-countdown-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+}
+
+.prep-countdown-sub {
+  font-size: 0.85rem;
+  color: #fde68a;
+}
+
+.prep-counting-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.prep-skip-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transition: all 0.2s;
+}
+
+.prep-cancel-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.part2-record-buttons-row {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.prep-trigger-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  box-shadow: 0 8px 20px -5px rgba(245, 158, 11, 0.4) !important;
+}
+
+.record-direct-btn {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.prep-active-recorder-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.prep-active-badge {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  padding: 8px 22px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.prep-active-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.prep-cancel-secondary-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 14px 22px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.prep-cancel-secondary-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}

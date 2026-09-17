@@ -136,18 +136,50 @@ function App() {
     stopPrepTimer();
   };
 
+  const startRecordingRef = useRef(null);
+
   // Part 2 1-Minute Preparation Timer
   const togglePrepTimer = () => {
     if (isPrepActive) {
       stopPrepTimer();
     } else {
+      if (isRecording) {
+        stopRecording();
+      }
       setIsPrepActive(true);
       setPrepTimeLeft(60);
+      setStatus('⏳ 1-Minute Preparation timer started. Jot down notes! Recording will start automatically at 0:00.');
+
       prepIntervalRef.current = setInterval(() => {
         setPrepTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(prepIntervalRef.current);
             setIsPrepActive(false);
+            setStatus('🎙️ 1-Minute prep complete! Recording started automatically... Speak clearly.');
+
+            // Sound chime cue (880Hz)
+            try {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.value = 0.15;
+                osc.start();
+                setTimeout(() => {
+                  osc.stop();
+                  ctx.close();
+                }, 350);
+              }
+            } catch (e) {}
+
+            // Automatically trigger speech recording
+            if (startRecordingRef.current) {
+              startRecordingRef.current();
+            }
             return 0;
           }
           return prev - 1;
@@ -162,6 +194,13 @@ function App() {
     }
     setIsPrepActive(false);
     setPrepTimeLeft(60);
+  };
+
+  const skipPrepAndRecord = () => {
+    stopPrepTimer();
+    if (startRecordingRef.current) {
+      startRecordingRef.current();
+    }
   };
 
   useEffect(() => {
@@ -292,6 +331,8 @@ function App() {
       }
     }
   };
+
+  startRecordingRef.current = startRecording;
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
@@ -517,15 +558,49 @@ ${evaluation}
             </div>
 
             {ieltsPart === 'Part 2' && (
-              <div className="prep-timer-container">
-                <button
-                  type="button"
-                  className={`prep-btn ${isPrepActive ? 'active' : ''}`}
-                  onClick={togglePrepTimer}
-                >
-                  ⏱️ {isPrepActive ? `Prep Countdown: ${prepTimeLeft}s` : '1-Min Preparation Timer'}
-                </button>
-                {isPrepActive && <div className="prep-hint">Make bullet notes on paper now!</div>}
+              <div className={`part2-prep-banner ${isPrepActive ? 'active' : ''}`}>
+                {!isPrepActive ? (
+                  <div className="prep-banner-idle">
+                    <div className="prep-banner-info">
+                      <span className="prep-banner-icon">⏱️</span>
+                      <div>
+                        <strong>1-Minute Preparation Countdown</strong>
+                        <p>Take notes on paper. Recording will automatically begin at 0:00.</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="prep-start-btn"
+                      onClick={togglePrepTimer}
+                      disabled={isRecording || isLoading}
+                    >
+                      ⏱️ Start 1-Min Prep & Auto-Record
+                    </button>
+                  </div>
+                ) : (
+                  <div className="prep-banner-counting">
+                    <div className="prep-countdown-box">
+                      <span className="prep-countdown-num">0:{prepTimeLeft.toString().padStart(2, '0')}</span>
+                      <span className="prep-countdown-sub">Preparation time remaining (Auto-recording starts at 0:00)</span>
+                    </div>
+                    <div className="prep-counting-actions">
+                      <button
+                        type="button"
+                        className="prep-skip-btn"
+                        onClick={skipPrepAndRecord}
+                      >
+                        🔴 Skip Prep & Record Now
+                      </button>
+                      <button
+                        type="button"
+                        className="prep-cancel-btn"
+                        onClick={stopPrepTimer}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -602,13 +677,65 @@ ${evaluation}
           </div>
 
           <div className="recorder-controls">
-            <button
-              className={`record-button ${isRecording ? 'recording' : ''}`}
-              onClick={toggleRecording}
-              disabled={isLoading}
-            >
-              {isRecording ? '⏹️ Stop & Score Speaking' : '🔴 Start Recording Response'}
-            </button>
+            {isRecording ? (
+              <button
+                className="record-button recording"
+                onClick={stopRecording}
+                disabled={isLoading}
+              >
+                ⏹️ Stop & Score Speaking
+              </button>
+            ) : isPrepActive ? (
+              <div className="prep-active-recorder-cluster">
+                <div className="prep-active-badge">
+                  ⏳ 1-Min Prep Active: 0:{prepTimeLeft.toString().padStart(2, '0')} (Auto-records at 0:00)
+                </div>
+                <div className="prep-active-buttons">
+                  <button
+                    className="record-button skip-prep-btn"
+                    onClick={skipPrepAndRecord}
+                    disabled={isLoading}
+                  >
+                    🔴 Skip Prep & Start Recording Now
+                  </button>
+                  <button
+                    type="button"
+                    className="prep-cancel-secondary-btn"
+                    onClick={stopPrepTimer}
+                  >
+                    Cancel Prep
+                  </button>
+                </div>
+              </div>
+            ) : ieltsPart === 'Part 2' ? (
+              <div className="part2-record-buttons-row">
+                <button
+                  type="button"
+                  className="record-button prep-trigger-btn"
+                  onClick={togglePrepTimer}
+                  disabled={isLoading}
+                  title="Starts a 60-second preparation countdown for taking notes, then auto-records"
+                >
+                  ⏱️ 1-Min Prep & Auto-Record
+                </button>
+                <button
+                  type="button"
+                  className="record-button record-direct-btn"
+                  onClick={startRecording}
+                  disabled={isLoading}
+                >
+                  🔴 Record Directly
+                </button>
+              </div>
+            ) : (
+              <button
+                className="record-button"
+                onClick={toggleRecording}
+                disabled={isLoading}
+              >
+                🔴 Start Recording Response
+              </button>
+            )}
           </div>
 
           {/* Audio Playback Player */}
