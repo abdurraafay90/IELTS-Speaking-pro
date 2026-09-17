@@ -9,6 +9,11 @@ import json
 import logging
 from datetime import datetime
 from typing import Optional
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +22,7 @@ logger = logging.getLogger("ielts_backend")
 # Application Configuration
 APP_PASSWORD = os.getenv("APP_PASSWORD", "speaking30").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-OPENAI_EVAL_MODEL = os.getenv("OPENAI_EVAL_MODEL", "gpt-4o").strip()
+OPENAI_EVAL_MODEL = os.getenv("OPENAI_EVAL_MODEL", "gpt-5.6-luna").strip()
 OPENAI_TRANSCRIBE_MODEL = os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-transcribe").strip()
 MAX_AUDIO_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB hard limit (~5 minutes of speech audio)
 
