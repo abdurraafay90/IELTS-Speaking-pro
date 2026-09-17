@@ -26,6 +26,7 @@ frontend/build/
 !package.json
 !package-lock.json
 !vercel.json
+!ielts_speaking_questions.json
 !requirements.txt
 !.gitignore
 !*.js

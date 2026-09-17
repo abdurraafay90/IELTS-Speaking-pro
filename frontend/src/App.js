@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { getRandomQuestion } from './questionBank';
+import { CAMBRIDGE_TESTS } from './cambridgeTests';
 import './App.css';
 
 const DEFAULT_SYSTEM_PROMPT = `You are a Senior, Official IELTS Speaking Examiner accredited by the British Council and IDP.
@@ -61,9 +62,15 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Cambridge IELTS Selection State
+  const [selectedCambridgeTestId, setSelectedCambridgeTestId] = useState('cambridge-19-test-1');
+
   // Practice & Recording State
   const [ieltsPart, setIeltsPart] = useState('Part 1');
-  const [question, setQuestion] = useState(() => getRandomQuestion('Part 1'));
+  const [question, setQuestion] = useState(() => {
+    const defaultTest = CAMBRIDGE_TESTS[0];
+    return defaultTest ? defaultTest.part_1.join('\n\n') : getRandomQuestion('Part 1');
+  });
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('Ready to practice');
   const [transcript, setTranscript] = useState('');
@@ -124,16 +131,49 @@ function App() {
     setLoginError('');
   };
 
+  // Load Cambridge Test
+  const loadCambridgeTest = (testId, part = ieltsPart) => {
+    setSelectedCambridgeTestId(testId);
+    stopPrepTimer();
+    if (!testId) {
+      setQuestion(getRandomQuestion(part));
+      return;
+    }
+    const found = CAMBRIDGE_TESTS.find((t) => t.id === testId);
+    if (found) {
+      if (part === 'Part 1') {
+        setQuestion(found.part_1.join('\n\n'));
+      } else if (part === 'Part 2') {
+        setQuestion(found.part_2);
+      } else if (part === 'Part 3') {
+        setQuestion(found.part_3.join('\n\n'));
+      }
+    }
+  };
+
   // Change question when IELTS Part changes
   const handlePartChange = (part) => {
     setIeltsPart(part);
-    setQuestion(getRandomQuestion(part));
     stopPrepTimer();
+    if (selectedCambridgeTestId) {
+      loadCambridgeTest(selectedCambridgeTestId, part);
+    } else {
+      setQuestion(getRandomQuestion(part));
+    }
   };
 
   const handleRandomQuestion = () => {
+    setSelectedCambridgeTestId('');
     setQuestion(getRandomQuestion(ieltsPart));
     stopPrepTimer();
+  };
+
+  const handleRandomCambridgeTest = () => {
+    const randomIndex = Math.floor(Math.random() * CAMBRIDGE_TESTS.length);
+    const randomTest = CAMBRIDGE_TESTS[randomIndex];
+    if (randomTest) {
+      loadCambridgeTest(randomTest.id, ieltsPart);
+    }
   };
 
   const startRecordingRef = useRef(null);
@@ -538,6 +578,42 @@ ${evaluation}
       <main className="main-content">
         {/* Setup & Question Card */}
         <section className="setup-container">
+          {/* Cambridge IELTS Test Picker */}
+          <div className="cambridge-selector-card">
+            <div className="cambridge-selector-header">
+              <div className="cambridge-selector-label">
+                <span className="cambridge-book-icon">📚</span>
+                <div>
+                  <strong>Official Cambridge IELTS Practice Tests</strong>
+                  <span>Auto-fills authentic Cambridge exam questions for Parts 1, 2, and 3</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="action-link-btn"
+                onClick={handleRandomCambridgeTest}
+                title="Picks a random Cambridge test"
+              >
+                🎲 Random Cambridge Test
+              </button>
+            </div>
+
+            <div className="cambridge-dropdown-wrapper">
+              <select
+                className="cambridge-select"
+                value={selectedCambridgeTestId}
+                onChange={(e) => loadCambridgeTest(e.target.value)}
+              >
+                <option value="">-- Custom / Manual Question Entry --</option>
+                {CAMBRIDGE_TESTS.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    📖 {t.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="setup-row">
             <div className="input-group part-selector">
               <label>Select Speaking Part:</label>
