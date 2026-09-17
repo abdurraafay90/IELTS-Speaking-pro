@@ -54,16 +54,22 @@ REQUIRED OUTPUT FORMAT (Markdown):
 `;
 
 function App() {
-  // Authentication State
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem('ielts_auth_key') || '');
-  const [username, setUsername] = useState(() => localStorage.getItem('ielts_username') || '');
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('ielts_auth_key')));
-  const [loginUsername, setLoginUsername] = useState(() => localStorage.getItem('ielts_username') || '');
+  // Authentication State (Session-only: User signs out whenever tab/website is closed)
+  const [authToken, setAuthToken] = useState(() => sessionStorage.getItem('ielts_auth_key') || '');
+  const [username, setUsername] = useState(() => sessionStorage.getItem('ielts_username') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(sessionStorage.getItem('ielts_auth_key')));
+  const [loginUsername, setLoginUsername] = useState(() => sessionStorage.getItem('ielts_username') || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const passwordInputRef = useRef(null);
+
+  // Clear any legacy persistent logins so user must log in fresh every session
+  useEffect(() => {
+    localStorage.removeItem('ielts_auth_key');
+    localStorage.removeItem('ielts_username');
+  }, []);
 
   // Cambridge IELTS Selection State
   const [selectedCambridgeTestId, setSelectedCambridgeTestId] = useState('cambridge-21-test-1');
@@ -138,8 +144,8 @@ function App() {
       });
 
       if (res.ok) {
-        localStorage.setItem('ielts_auth_key', cleanPass);
-        localStorage.setItem('ielts_username', cleanUser);
+        sessionStorage.setItem('ielts_auth_key', cleanPass);
+        sessionStorage.setItem('ielts_username', cleanUser);
         setAuthToken(cleanPass);
         setUsername(cleanUser);
         setIsAuthenticated(true);
@@ -154,8 +160,8 @@ function App() {
     } catch (err) {
       // Fallback offline verification if network issue
       if (cleanPass === 'speaking30') {
-        localStorage.setItem('ielts_auth_key', cleanPass);
-        localStorage.setItem('ielts_username', cleanUser);
+        sessionStorage.setItem('ielts_auth_key', cleanPass);
+        sessionStorage.setItem('ielts_username', cleanUser);
         setAuthToken(cleanPass);
         setUsername(cleanUser);
         setIsAuthenticated(true);
@@ -168,6 +174,8 @@ function App() {
   };
 
   const handleLogout = () => {
+    sessionStorage.removeItem('ielts_auth_key');
+    sessionStorage.removeItem('ielts_username');
     localStorage.removeItem('ielts_auth_key');
     localStorage.removeItem('ielts_username');
     setAuthToken('');
