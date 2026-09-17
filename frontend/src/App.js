@@ -62,6 +62,8 @@ function App() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const passwordInputRef = useRef(null);
 
   // Cambridge IELTS Selection State
   const [selectedCambridgeTestId, setSelectedCambridgeTestId] = useState('cambridge-21-test-1');
@@ -106,7 +108,10 @@ function App() {
 
   // Handle Authentication
   const handleLogin = async (e) => {
-    e?.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const cleanUser = loginUsername.trim();
     const cleanPass = loginPassword.trim();
     if (!cleanUser) {
@@ -117,6 +122,9 @@ function App() {
       setLoginError('Please enter the access password.');
       return;
     }
+
+    setIsLoggingIn(true);
+    setLoginError('');
 
     try {
       // Authenticate with backend and record candidate login
@@ -136,9 +144,11 @@ function App() {
         setUsername(cleanUser);
         setIsAuthenticated(true);
         setLoginError('');
+        setIsLoggingIn(false);
         return;
       } else {
         setLoginError('Incorrect password. Access is restricted.');
+        setIsLoggingIn(false);
         return;
       }
     } catch (err) {
@@ -153,6 +163,7 @@ function App() {
       } else {
         setLoginError('Incorrect password. Access is restricted.');
       }
+      setIsLoggingIn(false);
     }
   };
 
@@ -618,6 +629,16 @@ ${evaluation}
                     setLoginUsername(e.target.value);
                     setLoginError('');
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (!loginPassword.trim()) {
+                        passwordInputRef.current?.focus();
+                      } else {
+                        handleLogin(e);
+                      }
+                    }
+                  }}
                   autoFocus
                 />
               </div>
@@ -628,11 +649,19 @@ ${evaluation}
               <div className="password-input-wrapper input-with-icon">
                 <span className="input-field-icon">🔑</span>
                 <input
+                  ref={passwordInputRef}
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter access password"
                   value={loginPassword}
                   onChange={(e) => {
                     setLoginPassword(e.target.value);
                     setLoginError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLogin(e);
+                    }
                   }}
                 />
                 <button
@@ -648,8 +677,8 @@ ${evaluation}
 
             {loginError && <div className="login-error-msg">{loginError}</div>}
 
-            <button type="submit" className="login-submit-btn">
-              Unlock Speaking Suite →
+            <button type="submit" className="login-submit-btn" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Unlocking Speaking Suite...' : 'Unlock Speaking Suite →'}
             </button>
           </form>
 
