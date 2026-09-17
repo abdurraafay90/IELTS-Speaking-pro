@@ -192,30 +192,6 @@ function App() {
       setAudioUrl(null);
     }
   };
-
-  const handleRandomQuestion = () => {
-    setSelectedCambridgeTestId('');
-    stopPrepTimer();
-    setIsManualQuestionEdit(false);
-    const rand = getRandomQuestion(ieltsPart);
-    setQuestionsList([rand]);
-    setCurrentQuestionIndex(0);
-    setQuestion(rand);
-    setTranscript('');
-    setEvaluation('');
-    setDuration(null);
-    setAudioUrl(null);
-    setStatus('New random question loaded.');
-  };
-
-  const handleRandomCambridgeTest = () => {
-    const randomIndex = Math.floor(Math.random() * CAMBRIDGE_TESTS.length);
-    const randomTest = CAMBRIDGE_TESTS[randomIndex];
-    if (randomTest) {
-      loadCambridgeTest(randomTest.id, ieltsPart, 0);
-    }
-  };
-
   // Navigation between questions (Part 1 and Part 3)
   const goToQuestion = (index) => {
     if (index >= 0 && index < questionsList.length) {
@@ -686,14 +662,6 @@ ${evaluation}
                   <span>Auto-fills authentic Cambridge exam questions for Parts 1, 2, and 3</span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="action-link-btn"
-                onClick={handleRandomCambridgeTest}
-                title="Picks a random Cambridge test"
-              >
-                🎲 Random Cambridge Test
-              </button>
             </div>
 
             <div className="cambridge-dropdown-wrapper">
@@ -906,13 +874,6 @@ ${evaluation}
                     onClick={() => copyToClipboard(question, 'Question copied!')}
                   >
                     📋 Copy
-                  </button>
-                  <button
-                    type="button"
-                    className="action-link-btn"
-                    onClick={handleRandomQuestion}
-                  >
-                    🎲 Random
                   </button>
                 </div>
               </div>
@@ -1173,16 +1134,16 @@ ${evaluation}
                   } else if (ieltsPart === 'Part 2') {
                     handlePartChange('Part 3');
                   } else {
-                    handleRandomQuestion();
+                    handlePartChange('Part 1');
                   }
-                  window.scrollTo({ top: 350, behavior: 'smooth' });
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
                 }}
               >
                 {ieltsPart === 'Part 1'
                   ? '🎯 Part 1 Complete! Proceed to Part 2 (Cue Card) →'
                   : ieltsPart === 'Part 2'
                   ? '🎯 Part 2 Complete! Proceed to Part 3 (Discussion) →'
-                  : '🚀 Practice Next Question'}
+                  : '🎉 Speaking Test Finished! Restart / Choose Test →'}
               </button>
             )}
           </div>

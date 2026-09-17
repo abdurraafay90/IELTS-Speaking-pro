@@ -1415,20 +1415,20 @@ body {
 
 .cambridge-selector-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 12px;
 }
 
 .cambridge-selector-label {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  width: 100%;
 }
 
 .cambridge-book-icon {
   font-size: 1.6rem;
+  flex-shrink: 0;
 }
 
 .cambridge-selector-label strong {
@@ -1443,21 +1443,39 @@ body {
 }
 
 .cambridge-dropdown-wrapper {
+  position: relative;
   width: 100%;
 }
 
 .cambridge-select {
   width: 100%;
-  background: var(--bg-input);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--bg-input);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23818cf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 18px) center;
+  background-size: 16px 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 14px 48px 14px 16px;
   color: var(--text-main);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   font-family: inherit;
+  box-sizing: border-box;
+}
+
+.cambridge-select::-ms-expand {
+  display: none;
+}
+
+.cambridge-select:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 .cambridge-select:focus {
@@ -1476,7 +1494,7 @@ body {
 .cambridge-select option {
   background: #0f172a;
   color: #f8fafc;
-  padding: 8px;
+  padding: 10px 12px;
   font-weight: normal;
 }
 
