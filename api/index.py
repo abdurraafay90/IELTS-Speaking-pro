@@ -41,6 +41,18 @@ def get_openai_client():
 
 app = FastAPI(title="IELTS Speaking Pro API", version="2.0.0")
 
+@app.exception_handler(404)
+async def debug_404(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "debug_scope_path": request.scope.get("path"),
+            "debug_url_path": request.url.path,
+            "x_matched_path": request.headers.get("x-matched-path"),
+            "detail": "Not Found"
+        }
+    )
+
 
 # Resolve Build Directory
 def resolve_build_dir():
