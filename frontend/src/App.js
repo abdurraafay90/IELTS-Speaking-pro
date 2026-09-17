@@ -599,7 +599,7 @@ ${evaluation}
                 <span className="input-field-icon">👤</span>
                 <input
                   type="text"
-                  placeholder="Enter your name (e.g. Alex)"
+                  placeholder="Enter your name"
                   value={loginUsername}
                   onChange={(e) => {
                     setLoginUsername(e.target.value);
@@ -616,7 +616,6 @@ ${evaluation}
                 <span className="input-field-icon">🔑</span>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter password (speaking30)"
                   value={loginPassword}
                   onChange={(e) => {
                     setLoginPassword(e.target.value);
@@ -829,14 +828,6 @@ ${evaluation}
                     onClick={() => copyToClipboard(question, 'Question copied!')}
                   >
                     📋 Copy
-                  </button>
-                  <button
-                    type="button"
-                    className="action-link-btn"
-                    onClick={handleRandomQuestion}
-                    title="Pick random question"
-                  >
-                    🎲 Random
                   </button>
                 </div>
               </div>
