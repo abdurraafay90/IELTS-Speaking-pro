@@ -1890,3 +1890,598 @@ body {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
   }
 }
+
+/* ==========================================================================
+   10. Comprehensive Mobile Responsive Design System (Tablets & Phones)
+   ========================================================================== */
+
+/* Overflow & Viewport Safety */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+@media (max-width: 768px) {
+  .App {
+    padding: 16px 12px 60px;
+    max-width: 100%;
+  }
+
+  .main-content {
+    gap: 18px;
+  }
+
+  .setup-container {
+    padding: 20px 16px;
+    border-radius: 20px;
+    gap: 18px;
+  }
+
+  .recorder-container {
+    padding: 28px 16px;
+    border-radius: 20px;
+    gap: 18px;
+  }
+
+  .results-container {
+    padding: 22px 16px;
+    border-radius: 20px;
+    gap: 18px;
+  }
+
+  .app-header h1 {
+    font-size: 2.1rem;
+  }
+
+  .app-header p {
+    font-size: 0.95rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    padding: 16px 18px;
+    border-radius: 16px;
+  }
+
+  .metric-value {
+    font-size: 1.85rem;
+  }
+
+  .metric-label {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 640px) {
+  /* 1. Header & Meta Row */
+  .header-meta-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .candidate-badge {
+    width: 100%;
+    justify-content: center;
+    padding: 7px 14px;
+    font-size: 0.82rem;
+  }
+
+  .header-right-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .status-pill {
+    flex: 1;
+    justify-content: center;
+    padding: 7px 12px;
+    font-size: 0.76rem;
+  }
+
+  .signout-button {
+    padding: 7px 14px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .app-header {
+    margin-bottom: 20px;
+  }
+
+  .brand-badge {
+    font-size: 0.74rem;
+    padding: 5px 14px;
+    margin-bottom: 10px;
+  }
+
+  .app-header h1 {
+    font-size: 1.75rem;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+
+  .app-header p {
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  /* 2. Setup Container & Cambridge Selector */
+  .setup-container {
+    padding: 18px 14px;
+  }
+
+  .cambridge-selector-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .cambridge-selector-label {
+    gap: 10px;
+  }
+
+  .cambridge-book-icon {
+    font-size: 1.35rem;
+  }
+
+  .cambridge-selector-label strong {
+    font-size: 0.88rem;
+  }
+
+  .cambridge-selector-label span {
+    font-size: 0.74rem;
+  }
+
+  .cambridge-select {
+    font-size: 0.85rem;
+    padding: 12px 36px 12px 14px;
+    background-position: calc(100% - 12px) center;
+  }
+
+  .setup-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .part-selector {
+    width: 100%;
+  }
+
+  .part-buttons {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .part-pill {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 6px;
+    font-size: 0.76rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 3. Question Navigation Header & Pills */
+  .question-nav-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+
+  .question-nav-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .question-step-badge {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+  }
+
+  .question-part-pill {
+    font-size: 0.76rem;
+    padding: 4px 10px;
+  }
+
+  .question-pills-cluster {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .question-pills-cluster::-webkit-scrollbar {
+    display: none;
+  }
+
+  .q-pill {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .action-links {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .action-link-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* 4. Examiner Question Card */
+  .examiner-question-card {
+    padding: 16px 14px;
+    border-radius: 18px;
+    gap: 12px;
+    min-height: auto;
+  }
+
+  .examiner-quote-icon {
+    font-size: 1.5rem;
+  }
+
+  .examiner-prefix-label {
+    font-size: 0.74rem;
+  }
+
+  .examiner-question-text {
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  /* 5. Question Prev / Next Controls (No overlapping!) */
+  .question-nav-footer,
+  .question-nav-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 0 0;
+  }
+
+  .btn-nav-prev,
+  .btn-nav-next {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 0.8rem;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: var(--radius-pill);
+  }
+
+  .question-nav-indicator {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  /* 6. Part 2 Cue Card & Prep Banner */
+  .cue-card-display-card {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .cue-card-formatted-body {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .part2-prep-banner {
+    padding: 14px;
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  .prep-banner-idle {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .prep-start-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 16px;
+    font-size: 0.84rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .prep-countdown-box {
+    text-align: center;
+  }
+
+  .prep-countdown-num {
+    font-size: 2.2rem;
+  }
+
+  .prep-countdown-sub {
+    font-size: 0.78rem;
+  }
+
+  .prep-counting-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .prep-skip-btn,
+  .prep-cancel-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  /* 7. Recorder Container & Mic Controls */
+  .recorder-container {
+    padding: 24px 14px;
+  }
+
+  .mic-ring {
+    width: 66px;
+    height: 66px;
+  }
+
+  .mic-icon {
+    font-size: 1.85rem;
+  }
+
+  .timer-display {
+    font-size: 2rem;
+    padding: 6px 18px;
+  }
+
+  .timer-max {
+    font-size: 0.9rem;
+  }
+
+  .limit-warning-badge {
+    font-size: 0.78rem;
+    padding: 5px 12px;
+  }
+
+  .target-pace-hint {
+    font-size: 0.78rem;
+  }
+
+  .record-button {
+    width: 100%;
+    max-width: 320px;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+
+  .part2-record-buttons-row {
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .part2-record-buttons-row .record-button {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .audio-playback-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+  }
+
+  .status-bar {
+    font-size: 0.82rem;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.4;
+  }
+
+  /* 8. Results & Evaluation Section */
+  .results-container {
+    padding: 18px 14px;
+  }
+
+  .results-tabs {
+    gap: 6px;
+    padding-bottom: 10px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 10px;
+    font-size: 0.84rem;
+  }
+
+  .card-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .card-header h3 {
+    font-size: 0.98rem;
+  }
+
+  .card-copy-btn {
+    padding: 5px 12px;
+    font-size: 0.76rem;
+  }
+
+  .transcription-card,
+  .evaluation-card,
+  .transcript-box,
+  .evaluation-box {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+
+  .display-area,
+  .transcription-text,
+  .evaluation-markdown {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+
+  .evaluation-markdown h3 {
+    font-size: 1.15rem;
+    margin: 14px 0 8px;
+  }
+
+  .evaluation-markdown h4 {
+    font-size: 0.98rem;
+    margin: 12px 0 6px;
+  }
+
+  .evaluation-markdown p {
+    margin: 0 0 10px;
+  }
+
+  .evaluation-markdown ul,
+  .evaluation-markdown ol {
+    padding-left: 18px;
+    margin: 0 0 10px;
+  }
+
+  /* CRITICAL: Responsive Table Formatting for IELTS Markdown Tables */
+  .evaluation-markdown table {
+    width: 100% !important;
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-collapse: collapse !important;
+    margin: 14px 0 !important;
+  }
+
+  .evaluation-markdown th,
+  .evaluation-markdown td {
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    min-width: 105px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 9. Action Buttons (Download & Next) */
+  .actions-bar {
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+    padding: 0 !important;
+  }
+
+  .action-button {
+    width: 100% !important;
+    padding: 14px 18px !important;
+    font-size: 0.92rem !important;
+    justify-content: center !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+
+  /* 10. Microphone Modal */
+  .mic-modal-card {
+    padding: 24px 18px;
+    border-radius: 22px;
+  }
+
+  .mic-modal-main-icon {
+    font-size: 2.8rem;
+  }
+
+  .mic-modal-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .mic-modal-desc {
+    font-size: 0.86rem;
+  }
+
+  .mic-step-text {
+    font-size: 0.82rem;
+  }
+
+  .mic-modal-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mic-modal-retry-btn,
+  .mic-modal-dismiss-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Extra Small Phones (iPhone SE, Galaxy S compact, <= 380px) */
+@media (max-width: 380px) {
+  .app-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .btn-nav-prev,
+  .btn-nav-next {
+    font-size: 0.74rem;
+    padding: 8px 6px;
+  }
+
+  .question-nav-indicator {
+    font-size: 0.74rem;
+    padding: 4px 6px;
+  }
+
+  .timer-display {
+    font-size: 1.8rem;
+    padding: 6px 14px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .login-card {
+    padding: 24px 14px;
+  }
+
+  .login-card h2 {
+    font-size: 1.5rem;
+  }
+}
+
