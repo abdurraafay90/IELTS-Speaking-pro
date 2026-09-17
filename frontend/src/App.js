@@ -561,7 +561,7 @@ ${evaluation}
     return (
       <div className="login-screen">
         <div className="login-card">
-          <div className="login-badge">Private Access</div>
+          <div className="login-badge">✦ Private Access</div>
           <div className="login-icon">🎙️</div>
           <h2>IELTS Speaking Pro</h2>
           <p className="login-subtitle">
@@ -644,7 +644,7 @@ ${evaluation}
           </div>
         </div>
 
-        <div className="brand-badge">Official IELTS Criteria</div>
+        <div className="brand-badge">✦ Official IELTS Examiner AI</div>
         <h1>IELTS Speaking Practice Pro</h1>
         <p>Record your voice, get transcribed instantly, and receive British Council / IDP Band Scores & feedback.</p>
       </header>
