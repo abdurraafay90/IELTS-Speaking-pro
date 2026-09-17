@@ -1,137 +1,268 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { getRandomQuestion } from './questionBank';
 import './App.css';
 
+const DEFAULT_SYSTEM_PROMPT = `You are a Senior, Official IELTS Speaking Examiner accredited by the British Council and IDP.
+Your mission is to rigorously and constructively evaluate a candidate's transcribed spoken response in accordance with the official IELTS Speaking Public Band Descriptors.
+
+EVALUATION PILLARS (Band 0.0 - 9.0 in 0.5 increments):
+1. Fluency and Coherence (FC): Continuity, speech rate, natural flow, appropriate use of discourse markers, absence of unnatural self-correction or excessive hesitation.
+2. Lexical Resource (LR): Range, precision, flexibility, idiomatic collocations, sophistication, paraphrasing ability, and natural word choice.
+3. Grammatical Range and Accuracy (GRA): Use of compound and complex sentence structures, conditional clauses, relative clauses, tense consistency, and structural variety.
+4. Pronunciation & Delivery Insights (P): Based on transcription clarity, rhythm markers, pause indicators, and cadence.
+
+PART-SPECIFIC BENCHMARKS:
+- Part 1 (Introduction & Interview): Answers should be natural, direct, and concise (2-4 sentences, ~20-30s), extending with a reason or concrete example without over-rambling.
+- Part 2 (Long Turn / Cue Card): The candidate should speak for 1-2 minutes continuously, logically addressing all cue card prompts with a strong narrative arc and cohesive transitions.
+- Part 3 (Two-Way Discussion): Answers should demonstrate abstract analysis, evaluation of multiple perspectives, hypothesizing, and sophisticated academic discourse markers.
+
+IMPORTANT CONSTRAINTS & STT TOLERANCE:
+- Account for Speech-to-Text (STT) glitches: If a transcribed word is odd but phonetically sounds like a logical English word in context, evaluate their intended linguistic competence and do not penalize unfairly.
+- Maintain an encouraging yet realistic standard. Be exact with Band Scores.
+
+REQUIRED OUTPUT FORMAT (Markdown):
+### **Overall Band Score: [e.g. 7.5 / 9.0]**
+
+#### **Examiner Summary:**
+[A concise 2-sentence executive summary of the candidate's performance and primary strength.]
+
+#### **Criteria Breakdown:**
+- **Fluency & Coherence:** **[Score]/9.0** — [Specific diagnostic feedback]
+- **Lexical Resource:** **[Score]/9.0** — [Specific diagnostic feedback]
+- **Grammatical Range & Accuracy:** **[Score]/9.0** — [Specific diagnostic feedback]
+- **Spoken Delivery & Pronunciation Notes:** **[Score]/9.0** — [Notes on cadence, sentence length, and speech flow]
+
+#### **Key Strengths:**
+- [Specific strength demonstrated in the answer]
+- [Another positive element of language or organization]
+
+#### **Areas for Target Improvement:**
+- [Precise weakness in grammar, vocabulary, or coherence]
+- [Specific actionable recommendation to jump to the next band level]
+
+#### **Band 8+ Lexical Upgrades:**
+| Candidate's Original Phrase | Recommended Band 8.5+ Upgrade | Why It's Better |
+| :--- | :--- | :--- |
+| *"[Original phrase]"* | **"[Advanced collocation/idiom]"** | [Brief explanation] |
+| *"[Original phrase]"* | **"[Advanced collocation/idiom]"** | [Brief explanation] |
+
+#### **Model Band 9.0 Answer:**
+> "[Rewrite the candidate's response into a natural, native-level Band 9.0 answer answering the exact same question. Include natural flow and advanced collocations.]"
+`;
+
 function App() {
+  // Authentication State
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem('ielts_auth_key') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('ielts_auth_key')));
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Practice & Recording State
+  const [ieltsPart, setIeltsPart] = useState('Part 1');
+  const [question, setQuestion] = useState(() => getRandomQuestion('Part 1'));
   const [isRecording, setIsRecording] = useState(false);
-  const [status, setStatus] = useState('Ready to record');
-  const [transcript, setTranscript] = useState('Transcript will appear here...');
-  const [evaluation, setEvaluation] = useState('Evaluation will appear here...');
+  const [status, setStatus] = useState('Ready to practice');
+  const [transcript, setTranscript] = useState('');
+  const [evaluation, setEvaluation] = useState('');
   const [recorderInfo, setRecorderInfo] = useState('');
   const [timer, setTimer] = useState(0);
   const [duration, setDuration] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
-  const [ieltsPart, setIeltsPart] = useState('Part 1');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+
+  // Part 2 Prep Timer State
+  const [isPrepActive, setIsPrepActive] = useState(false);
+  const [prepTimeLeft, setPrepTimeLeft] = useState(60);
+  const prepIntervalRef = useRef(null);
+
   const timerIntervalRef = useRef(null);
   const timerRef = useRef(0);
-  
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioBlobRef = useRef(null);
+
+  // Handle Authentication
+  const handleLogin = (e) => {
+    e?.preventDefault();
+    if (!loginPassword.trim()) {
+      setLoginError('Please enter the access password.');
+      return;
+    }
+
+    // Default expected password is speaking30
+    if (loginPassword.trim() === 'speaking30') {
+      localStorage.setItem('ielts_auth_key', loginPassword.trim());
+      setAuthToken(loginPassword.trim());
+      setIsAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('Incorrect password. Access is restricted.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('ielts_auth_key');
+    setAuthToken('');
+    setIsAuthenticated(false);
+    setLoginPassword('');
+    setLoginError('');
+  };
+
+  // Change question when IELTS Part changes
+  const handlePartChange = (part) => {
+    setIeltsPart(part);
+    setQuestion(getRandomQuestion(part));
+    stopPrepTimer();
+  };
+
+  const handleRandomQuestion = () => {
+    setQuestion(getRandomQuestion(ieltsPart));
+    stopPrepTimer();
+  };
+
+  // Part 2 1-Minute Preparation Timer
+  const togglePrepTimer = () => {
+    if (isPrepActive) {
+      stopPrepTimer();
+    } else {
+      setIsPrepActive(true);
+      setPrepTimeLeft(60);
+      prepIntervalRef.current = setInterval(() => {
+        setPrepTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(prepIntervalRef.current);
+            setIsPrepActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  };
+
+  const stopPrepTimer = () => {
+    if (prepIntervalRef.current) {
+      clearInterval(prepIntervalRef.current);
+    }
+    setIsPrepActive(false);
+    setPrepTimeLeft(60);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (prepIntervalRef.current) clearInterval(prepIntervalRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, []);
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const [question, setQuestion] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState(`You are an expert, strict, and constructive English Language Speaking Examiner for international standardized proficiency tests. Your goal is to evaluate a candidate's transcribed spoken response to a specific question.
+  // Speech Metrics Calculation
+  const wordCount = transcript.trim() ? transcript.trim().split(/\s+/).length : 0;
+  const recordedDuration = duration || timer;
+  const wordsPerMinute = recordedDuration > 5 && wordCount > 0 
+    ? Math.round((wordCount / recordedDuration) * 60) 
+    : 0;
 
-You will be provided with:
+  const getPaceFeedback = (wpm) => {
+    if (wpm === 0) return null;
+    if (wpm < 95) return { label: 'Deliberate / Pauses Detected', color: '#f59e0b', desc: 'Slightly slow pace. Try to connect sentences more fluidly.' };
+    if (wpm <= 155) return { label: 'Ideal Conversational Pace', color: '#10b981', desc: 'Natural, native-sounding speech velocity (110–155 WPM).' };
+    return { label: 'Fast / Rapid Delivery', color: '#ef4444', desc: 'High pace. Ensure clarity and pronunciation are not rushed.' };
+  };
 
-The "Part Number" of the test (which indicates the expected depth and length of the response).
+  const paceInfo = getPaceFeedback(wordsPerMinute);
 
-The "Question" asked.
-
-The "Candidate's Transcript" (speech-to-text output of their answer).
-
-Evaluation Criteria:
-Evaluate the response based on the following four pillars:
-
-Fluency & Coherence: Does the answer flow logically? Are there excessive repetitions, self-corrections, or transcribed hesitation markers (e.g., "um," "uh")? Are linking words used naturally?
-
-Lexical Resource (Vocabulary): Does the candidate use a wide range of vocabulary accurately? Is there evidence of idiomatic language, uncommon words, or strong collocations?
-
-Grammatical Range & Accuracy: Does the candidate use a mix of simple and complex sentence structures? Are the tenses appropriate for the question?
-
-Task Relevance (Based on Part Number):
-
-Part 1 (Introduction): Expect short, direct, and natural answers.
-
-Part 2 (Monologue): Expect a well-structured, sustained answer covering all points of the prompt.
-
-Part 3 (Discussion): Expect abstract reasoning, justifications, and deep analysis.
-
-Constraints:
-Acknowledge that you are reading a transcript. You cannot evaluate pronunciation, intonation, or accent, but you MUST evaluate fluency based on transcribed pauses, filler words, and sentence flow.
-
-Be objective and professional. Do not overly praise the candidate; focus on actionable improvement.
-
-Account for Speech-to-Text (STT) Errors: If a word or phrase is nonsensical but phonetically sounds like a logical English word in context (e.g., transcribed as "head turn" instead of "return", or "a plenty" instead of "plenty of"), assume it is an STT software error. Point out the likely intended word in your feedback, but evaluate the candidate's Lexical and Grammatical score based on what they likely intended to say. Do not severely penalize their band score for an obvious microphone or transcription glitch.
-
-Required Output Format:
-Always format your response exactly as follows:
-
-### **Overall Band Score: [Provide an overall band score out of 9.0]**
-
-### **1. Strengths:**
-- [Bullet point 1-2 things the candidate did well]
-
-### **2. Areas for Improvement:**
-- [Bullet point 1-2 specific weaknesses in grammar, vocabulary, or flow]
-
-### **3. Detailed Breakdown:**
-- **Fluency & Coherence:** [Score]/9.0 - [Feedback]
-- **Lexical Resource:** [Score]/9.0 - [Feedback]
-- **Grammatical Range & Accuracy:** [Score]/9.0 - [Feedback]
-
-### **4. Suggested Answer / Better Phrasing:**
-- [Rewrite 1-2 of the candidate's sentences to sound more natural, advanced, or grammatically correct.]`);
-  
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const audioBlobRef = useRef(null);
-
+  // Recording Controls
   const startRecording = async () => {
     if (!question.trim()) {
-      alert('Please enter or paste the IELTS question first.');
+      alert('Please enter or select an IELTS question first.');
       return;
     }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      // Try optimal opus format, fallback to default
+      let options = { audioBitsPerSecond: 48000 };
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        options.mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        options.mimeType = 'audio/mp4';
+      }
+
+      try {
+        mediaRecorderRef.current = new MediaRecorder(stream, options);
+      } catch (e) {
+        mediaRecorderRef.current = new MediaRecorder(stream);
+      }
+
       audioChunksRef.current = [];
 
-      // Reset and start timer
+      // Reset timers
       setTimer(0);
       timerRef.current = 0;
       setDuration(null);
       setAudioUrl(null);
+      setTranscript('');
+      setEvaluation('');
+
       timerIntervalRef.current = setInterval(() => {
         timerRef.current += 1;
         setTimer(timerRef.current);
       }, 1000);
 
-      mediaRecorderRef.current.ondataavailable = event => {
-        audioChunksRef.current.push(event.data);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        audioBlobRef.current = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop());
+        const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+        audioBlobRef.current = new Blob(audioChunksRef.current, { type: mimeType });
+        stream.getTracks().forEach((track) => track.stop());
 
-        // Stop timer and set duration
         clearInterval(timerIntervalRef.current);
-        setDuration(timerRef.current);
-        
-        // Create audio URL for playback
+        const finalDuration = timerRef.current;
+        setDuration(finalDuration);
+
         const url = URL.createObjectURL(audioBlobRef.current);
         setAudioUrl(url);
 
-        setStatus('Processing transcription and evaluation...');
-        const result = await sendAudioForProcessing(audioBlobRef.current);
-        setTranscript(result.transcript);
-        setEvaluation(result.evaluation);
-        setStatus('Processing complete!');
+        setIsLoading(true);
+        setStatus('Transcribing speech & analyzing examiner criteria...');
 
-        // Show file info
-        const sizeInMB = (audioBlobRef.current.size / (1024 * 1024)).toFixed(2);
-        setRecorderInfo(`Recorded: ${new Date().toLocaleString()}, Size: ${sizeInMB}MB`);
+        const result = await sendAudioForProcessing(audioBlobRef.current);
+        setTranscript(result.transcript || 'No transcript generated.');
+        setEvaluation(result.evaluation || 'No evaluation received.');
+        setIsLoading(false);
+        setStatus('Evaluation completed!');
+
+        const sizeInKB = (audioBlobRef.current.size / 1024).toFixed(1);
+        setRecorderInfo(`Duration: ${formatTime(finalDuration)} | Size: ${sizeInKB} KB`);
       };
 
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.start(250); // Slice data every 250ms
       setIsRecording(true);
-      setStatus('Recording...');
+      setStatus('Recording your response... Speak clearly.');
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      setStatus('Error: Could not access microphone. Please check permissions.');
+      setStatus('Microphone access denied. Please allow microphone permissions in your browser.');
     }
   };
 
@@ -150,142 +281,390 @@ Always format your response exactly as follows:
     }
   };
 
+  // API Call with Authentication Header & Fallback URL
   const sendAudioForProcessing = async (blob) => {
     const formData = new FormData();
-    formData.append('audio_file', blob, 'recording.webm');
+    const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+    formData.append('audio_file', blob, `recording.${ext}`);
     formData.append('question', question);
     formData.append('ielts_part', ieltsPart);
     formData.append('system_prompt', systemPrompt);
+    formData.append('access_token', authToken);
 
-    try {
-      const response = await fetch('http://localhost:8000/transcribe-and-score', {
-        method: 'POST',
-        body: formData
-      });
+    // List of candidate endpoints to support Vercel serverless and local dev seamlessly
+    const endpoints = [
+      '/api/transcribe-and-score',
+      'http://localhost:8000/api/transcribe-and-score',
+      'http://localhost:8000/transcribe-and-score'
+    ];
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+    let lastError = null;
+
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'x-access-token': authToken
+          },
+          body: formData
+        });
+
+        if (response.status === 401) {
+          handleLogout();
+          throw new Error('Access session expired or invalid password. Please sign in again.');
+        }
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errText}`);
+        }
+
+        return await response.json();
+      } catch (err) {
+        lastError = err;
+        // If it's a connection refused on relative URL during local npm start without backend proxy, try next
+        if (err.message.includes('401')) {
+          break;
+        }
       }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Processing error:', error);
-      return {
-        transcript: `Error: ${error.message}`,
-        evaluation: `Error: ${error.message}`
-      };
     }
+
+    console.error('Processing error:', lastError);
+    return {
+      transcript: `Error processing audio: ${lastError?.message || 'Unknown network error'}`,
+      evaluation: `### Evaluation Failed\n\nCould not communicate with the backend scoring service. Please ensure the backend server is running and your OpenAI API key is configured.\n\n*Error details: ${lastError?.message}*`
+    };
   };
 
-  const saveTranscript = () => {
-    const content = `QUESTION: ${question}\n\nTRANSCRIPT:\n${transcript}\n\nEVALUATION:\n${evaluation}`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+  const saveReport = () => {
+    const content = `# IELTS Speaking Practice Report
+Date: ${new Date().toLocaleString()}
+Section: ${ieltsPart}
+Duration: ${formatTime(duration || 0)}
+Word Count: ${wordCount}
+Pace: ${wordsPerMinute} WPM
 
+## Target Question:
+${question}
+
+## Spoken Transcript:
+${transcript}
+
+---
+## Official Examiner Evaluation:
+${evaluation}
+`;
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ielts_practice_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+    a.download = `IELTS_Report_${ieltsPart.replace(/\s+/g, '_')}_${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(transcript);
-    alert('Transcript copied to clipboard!');
+  const copyToClipboard = (text, message) => {
+    navigator.clipboard.writeText(text);
+    alert(message || 'Copied to clipboard!');
   };
 
-  const copyQuestion = () => {
-    if (!question.trim()) {
-      alert('Question is empty!');
-      return;
-    }
-    navigator.clipboard.writeText(question);
-    alert('Question copied to clipboard!');
-  };
+  // --- 1. Single Sign-In Password Gate ---
+  if (!isAuthenticated) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <div className="login-badge">Private Access</div>
+          <div className="login-icon">🎙️</div>
+          <h2>IELTS Speaking Pro</h2>
+          <p className="login-subtitle">
+            Enter the authorized access password to unlock speech evaluation.
+          </p>
 
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter access password"
+                value={loginPassword}
+                onChange={(e) => {
+                  setLoginPassword(e.target.value);
+                  setLoginError('');
+                }}
+                autoFocus
+              />
+              <button
+                type="button"
+                className="toggle-pw-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '👁️' : '🔒'}
+              </button>
+            </div>
+
+            {loginError && <div className="login-error-msg">{loginError}</div>}
+
+            <button type="submit" className="login-submit-btn">
+              Unlock Speaking Suite →
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <span>Powered by OpenAI GPT-4o & Whisper</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 2. Main Practice Dashboard ---
   return (
     <div className="App">
+      {/* Top Header Bar */}
       <header className="app-header">
+        <div className="header-meta-row">
+          <div className="status-pill">
+            <span className="pulsing-dot"></span> Authorized Beta
+          </div>
+          <button className="signout-button" onClick={handleLogout} title="Lock and return to password screen">
+            Sign Out (Lock)
+          </button>
+        </div>
+
+        <div className="brand-badge">Official IELTS Criteria</div>
         <h1>IELTS Speaking Practice Pro</h1>
-        <p>Record, Transcribe, and Get AI Band Scores</p>
+        <p>Record your voice, get transcribed instantly, and receive British Council / IDP Band Scores & feedback.</p>
       </header>
 
       <main className="main-content">
-        <div className="setup-container">
-          <div className="input-group">
-            <label>Select IELTS Part:</label>
-            <select value={ieltsPart} onChange={(e) => setIeltsPart(e.target.value)}>
-              <option value="Part 1">Part 1: Introduction & Interview</option>
-              <option value="Part 2">Part 2: Individual Long Turn (Cue Card)</option>
-              <option value="Part 3">Part 3: Two-Way Discussion</option>
-            </select>
+        {/* Setup & Question Card */}
+        <section className="setup-container">
+          <div className="setup-row">
+            <div className="input-group part-selector">
+              <label>Select Speaking Part:</label>
+              <div className="part-buttons">
+                {['Part 1', 'Part 2', 'Part 3'].map((part) => (
+                  <button
+                    key={part}
+                    type="button"
+                    className={`part-pill ${ieltsPart === part ? 'active' : ''}`}
+                    onClick={() => handlePartChange(part)}
+                  >
+                    {part === 'Part 1' && 'Part 1: Interview'}
+                    {part === 'Part 2' && 'Part 2: Long Turn (Cue Card)'}
+                    {part === 'Part 3' && 'Part 3: Discussion'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {ieltsPart === 'Part 2' && (
+              <div className="prep-timer-container">
+                <button
+                  type="button"
+                  className={`prep-btn ${isPrepActive ? 'active' : ''}`}
+                  onClick={togglePrepTimer}
+                >
+                  ⏱️ {isPrepActive ? `Prep Countdown: ${prepTimeLeft}s` : '1-Min Preparation Timer'}
+                </button>
+                {isPrepActive && <div className="prep-hint">Make bullet notes on paper now!</div>}
+              </div>
+            )}
           </div>
 
           <div className="input-group">
             <div className="label-row">
-              <label>Question / Cue Card:</label>
+              <label>IELTS Question / Cue Card Prompt:</label>
               <div className="action-links">
-                <button className="clear-link" onClick={copyQuestion}>Copy Question</button>
-                <button className="clear-link" onClick={() => setQuestion('')}>Clear Text</button>
+                <button type="button" className="action-link-btn" onClick={handleRandomQuestion}>
+                  🎲 Pick Random Question
+                </button>
+                <button type="button" className="action-link-btn" onClick={() => copyToClipboard(question, 'Question copied!')}>
+                  📋 Copy Question
+                </button>
+                <button type="button" className="action-link-btn danger" onClick={() => setQuestion('')}>
+                  Clear
+                </button>
               </div>
             </div>
-            <textarea 
-              placeholder="Paste the IELTS question or cue card here..." 
+            <textarea
+              placeholder="Paste or type your IELTS question / cue card here..."
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              rows="4"
+              rows={ieltsPart === 'Part 2' ? 6 : 3}
             />
           </div>
-        </div>
 
-        <div className="recorder-container">
-          <div className={`timer-display ${isRecording ? 'active' : ''}`}>
-            {isRecording ? formatTime(timer) : (duration ? `Duration: ${formatTime(duration)}` : '0:00')}
+          {/* Optional Prompt Customizer Drawer */}
+          <div className="prompt-toggle-row">
+            <button
+              type="button"
+              className="prompt-toggle-btn"
+              onClick={() => setShowPromptEditor(!showPromptEditor)}
+            >
+              {showPromptEditor ? '▲ Hide Examiner Persona Prompt' : '⚙️ View / Customize Examiner Prompt'}
+            </button>
           </div>
-          <button
-            className={`record-button ${isRecording ? 'recording' : ''}`}
-            onClick={toggleRecording}
-          >
-            {isRecording ? 'Stop Recording' : 'Start Recording'}
-          </button>
 
+          {showPromptEditor && (
+            <div className="prompt-editor-box">
+              <label>Senior Examiner System Instructions:</label>
+              <textarea
+                rows="8"
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+              />
+              <button
+                type="button"
+                className="reset-prompt-btn"
+                onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
+              >
+                Reset to Default British Council / IDP Prompt
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Recording Section */}
+        <section className="recorder-container">
+          <div className="recorder-visual">
+            <div className={`mic-ring ${isRecording ? 'pulse' : ''}`}>
+              <span className="mic-icon">🎙️</span>
+            </div>
+
+            <div className={`timer-display ${isRecording ? 'active' : ''}`}>
+              {isRecording ? formatTime(timer) : (duration ? `Duration: ${formatTime(duration)}` : '0:00')}
+            </div>
+
+            <div className="target-pace-hint">
+              {ieltsPart === 'Part 1' && 'Target: 20–35s per answer'}
+              {ieltsPart === 'Part 2' && 'Target: 1m 45s – 2m 00s'}
+              {ieltsPart === 'Part 3' && 'Target: 40–60s per answer'}
+            </div>
+          </div>
+
+          <div className="recorder-controls">
+            <button
+              className={`record-button ${isRecording ? 'recording' : ''}`}
+              onClick={toggleRecording}
+              disabled={isLoading}
+            >
+              {isRecording ? '⏹️ Stop & Score Speaking' : '🔴 Start Recording Response'}
+            </button>
+          </div>
+
+          {/* Audio Playback Player */}
           {audioUrl && !isRecording && (
             <div className="audio-playback-container">
-              <label>Listen back to your recording:</label>
+              <div className="playback-header">
+                <span>🔊 Listen Back to Your Spoken Audio</span>
+                <span className="file-size-tag">{recorderInfo}</span>
+              </div>
               <audio src={audioUrl} controls className="audio-player" />
             </div>
           )}
 
-          <div className="status">{status}</div>
-          <div className="recorder-info">{recorderInfo}</div>
-        </div>
-
-        <div className="results-container">
-          <div className="transcript-box">
-            <h3>Transcript:</h3>
-            <div className="display-area">{transcript}</div>
+          <div className={`status-bar ${isLoading ? 'loading' : ''}`}>
+            {isLoading && <span className="spinner"></span>}
+            {status}
           </div>
-          
-          <div className="evaluation-box">
-            <h3>Examiner Evaluation & Feedback:</h3>
-            <div className="display-area evaluation-text">
-              <ReactMarkdown>{evaluation}</ReactMarkdown>
+        </section>
+
+        {/* Live Metrics Row (if transcript exists) */}
+        {transcript && (
+          <section className="metrics-grid">
+            <div className="metric-card">
+              <div className="metric-label">Spoken Word Count</div>
+              <div className="metric-value">{wordCount}</div>
+              <div className="metric-sub">Total words analyzed</div>
             </div>
-          </div>
-        </div>
 
-        <div className="actions-bar">
-          <button className="action-button save-btn" onClick={saveTranscript}>
-            Download Full Report
-          </button>
-          <button className="action-button copy-btn" onClick={copyToClipboard}>
-            Copy Transcript
-          </button>
-        </div>
+            <div className="metric-card">
+              <div className="metric-label">Speech Delivery Velocity</div>
+              <div className="metric-value">
+                {wordsPerMinute} <span className="metric-unit">WPM</span>
+              </div>
+              {paceInfo && (
+                <div className="pace-badge" style={{ color: paceInfo.color, borderColor: paceInfo.color }}>
+                  {paceInfo.label}
+                </div>
+              )}
+            </div>
+
+            <div className="metric-card">
+              <div className="metric-label">Recorded Duration</div>
+              <div className="metric-value">{formatTime(recordedDuration)}</div>
+              <div className="metric-sub">Speaking timeline</div>
+            </div>
+          </section>
+        )}
+
+        {/* Results: Transcript & Examiner Evaluation */}
+        {(transcript || evaluation) && (
+          <section className="results-container">
+            <div className="transcript-box">
+              <div className="card-header">
+                <h3>📝 Spoken Transcript</h3>
+                <button
+                  type="button"
+                  className="card-copy-btn"
+                  onClick={() => copyToClipboard(transcript, 'Transcript copied!')}
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="display-area transcript-text">
+                {transcript || 'Awaiting spoken input...'}
+              </div>
+            </div>
+
+            <div className="evaluation-box">
+              <div className="card-header">
+                <h3>🎖️ Examiner Assessment & Band Scoring</h3>
+                <button
+                  type="button"
+                  className="card-copy-btn"
+                  onClick={() => copyToClipboard(evaluation, 'Evaluation report copied!')}
+                >
+                  Copy Evaluation
+                </button>
+              </div>
+              <div className="display-area evaluation-text">
+                {evaluation ? (
+                  <ReactMarkdown>{evaluation}</ReactMarkdown>
+                ) : (
+                  <div className="placeholder-text">Evaluation will appear after recording...</div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Global Action Bar */}
+        {(transcript || evaluation) && (
+          <div className="actions-bar">
+            <button className="action-button download-btn" onClick={saveReport}>
+              💾 Download Complete IELTS Report (.md)
+            </button>
+            <button
+              className="action-button next-btn"
+              onClick={() => {
+                handleRandomQuestion();
+                setTranscript('');
+                setEvaluation('');
+                setDuration(null);
+                setAudioUrl(null);
+                setStatus('Ready to practice next question');
+              }}
+            >
+              🚀 Practice Next Question
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

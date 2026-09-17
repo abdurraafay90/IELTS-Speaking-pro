@@ -25,6 +25,7 @@ frontend/build/
 *.json
 !package.json
 !package-lock.json
+!vercel.json
 !requirements.txt
 !.gitignore
 !*.js

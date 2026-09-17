@@ -1,0 +1,10 @@
+{
+  "name": "ielts-speaking-pro-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "install:frontend": "cd frontend && npm install"
+  }
+}

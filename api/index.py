@@ -9,10 +9,6 @@ import json
 import logging
 from datetime import datetime
 from typing import Optional
-from dotenv import load_dotenv
-
-# Load local environment variables
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,16 +25,16 @@ def get_openai_client():
     if not api_key:
         raise HTTPException(
             status_code=500,
-            detail="OPENAI_API_KEY is not configured. Please set OPENAI_API_KEY in your environment variables or .env file."
+            detail="OPENAI_API_KEY is not configured. Please set OPENAI_API_KEY in your environment variables or Vercel settings."
         )
     return OpenAI(
         api_key=api_key,
         http_client=httpx.Client(proxy=None, timeout=60.0)
     )
 
-app = FastAPI(title="IELTS Speaking Pro API (Local & Production)", version="2.0.0")
+app = FastAPI(title="IELTS Speaking Pro API", version="2.0.0")
 
-# Enable CORS
+# Enable CORS for local development and production deployments
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -54,6 +50,7 @@ def verify_access(
 ):
     """
     Verify the single sign-in password ('speaking30' by default).
+    Protects user's OpenAI API credits from unauthorized public access.
     """
     token = None
     if authorization:
@@ -72,8 +69,8 @@ def verify_access(
     return True
 
 
-@app.get("/health")
 @app.get("/api/health")
+@app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
@@ -83,9 +80,11 @@ async def health_check():
     }
 
 
-@app.post("/verify-password")
 @app.post("/api/verify-password")
-async def verify_password_endpoint(payload: dict):
+@app.post("/verify-password")
+async def verify_password_endpoint(
+    payload: dict
+):
     password = payload.get("password", "").strip()
     if password == APP_PASSWORD:
         return {"valid": True, "message": "Authenticated successfully"}
@@ -96,10 +95,14 @@ async def verify_password_endpoint(payload: dict):
 
 
 async def transcribe_audio_stream(audio_bytes: bytes, filename: str) -> str:
+    """
+    Transcribe audio stream in-memory without requiring disk writes.
+    """
     audio_io = io.BytesIO(audio_bytes)
     audio_io.name = filename if filename else "recording.webm"
 
     models_to_try = [OPENAI_TRANSCRIBE_MODEL, "whisper-1", "gpt-4o-mini-transcribe"]
+    # De-duplicate while preserving order
     seen = set()
     models_to_try = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -127,12 +130,16 @@ async def evaluate_speaking_response(
     ielts_part: str,
     custom_system_prompt: Optional[str] = None
 ) -> dict:
+    """
+    Evaluate candidate's response against official IELTS Speaking criteria.
+    """
     if not transcript or not transcript.strip() or transcript.strip() == "[Empty Recording]":
         return {
             "transcript": "[Empty Recording]",
             "evaluation": "### **Overall Band Score: N/A**\n\nThe recording was empty or could not capture clear speech. Please ensure your microphone is enabled and speak clearly into your device."
         }
 
+    # Default official Senior IELTS Examiner prompt
     system_prompt = custom_system_prompt or """You are a Senior, Official IELTS Speaking Examiner accredited by the British Council and IDP.
 Your mission is to rigorously and constructively evaluate a candidate's transcribed spoken response in accordance with the official IELTS Speaking Public Band Descriptors.
 
@@ -148,7 +155,7 @@ PART-SPECIFIC BENCHMARKS:
 - Part 3 (Two-Way Discussion): Answers should demonstrate abstract analysis, evaluation of multiple perspectives, hypothesizing, and sophisticated academic discourse markers.
 
 IMPORTANT CONSTRAINTS & STT TOLERANCE:
-- Account for Speech-to-Text (STT) glitches: If a transcribed word is odd but phonetically sounds like a logical English word in context, evaluate their intended linguistic competence and do not penalize unfairly.
+- Account for Speech-to-Text (STT) glitches: If a transcribed word is odd but phonetically sounds like a logical English word in context (e.g. 'candidacy' -> 'candidate see', 'there' -> 'their'), evaluate their intended linguistic competence and do not penalize unfairly.
 - Maintain an encouraging yet realistic standard. Be exact with Band Scores.
 
 REQUIRED OUTPUT FORMAT (Markdown):
@@ -198,6 +205,7 @@ Please provide your rigorous examiner evaluation and band score."""
     for model_name in models_to_try:
         try:
             logger.info(f"Evaluating speaking response using model: {model_name}")
+            # Call OpenAI Chat Completions
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -222,8 +230,8 @@ Please provide your rigorous examiner evaluation and band score."""
     raise HTTPException(status_code=500, detail=f"Scoring evaluation failed: {str(last_error)}")
 
 
-@app.post("/transcribe")
 @app.post("/api/transcribe")
+@app.post("/transcribe")
 async def transcribe_endpoint(
     audio_file: UploadFile = File(...),
     auth: bool = Depends(verify_access)
@@ -241,8 +249,8 @@ async def transcribe_endpoint(
         raise HTTPException(status_code=500, detail=f"Transcription error: {str(e)}")
 
 
-@app.post("/transcribe-and-score")
 @app.post("/api/transcribe-and-score")
+@app.post("/transcribe-and-score")
 async def transcribe_and_score_endpoint(
     audio_file: UploadFile = File(...),
     question: str = Form(...),
@@ -255,8 +263,10 @@ async def transcribe_and_score_endpoint(
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
 
+        # 1. Transcribe audio stream in-memory
         transcript = await transcribe_audio_stream(content, audio_file.filename)
 
+        # 2. Evaluate transcript with Senior Examiner Prompt
         evaluation_result = await evaluate_speaking_response(
             transcript=transcript,
             question=question,
