@@ -1026,3 +1026,184 @@ body {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   8. Microphone Permission Popup Modal
+   ========================================================================== */
+.mic-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.mic-modal-card {
+  position: relative;
+  background: var(--bg-card-solid);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(239, 68, 68, 0.15);
+  border-radius: 24px;
+  padding: 36px 32px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-close-x {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.modal-close-x:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mic-modal-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  margin-bottom: 16px;
+}
+
+.mic-modal-main-icon {
+  font-size: 2.25rem;
+}
+
+.mic-modal-lock-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #ef4444;
+  border: 2px solid var(--bg-card-solid);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  padding: 2px 5px;
+}
+
+.mic-modal-card h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 10px;
+}
+
+.mic-modal-desc {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.mic-steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  background: rgba(11, 15, 25, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 26px;
+}
+
+.mic-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.mic-step-number {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.mic-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mic-step-text strong {
+  font-size: 0.9rem;
+  color: #f1f5f9;
+}
+
+.mic-step-text span {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.mic-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mic-modal-retry-btn {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border: none;
+  padding: 13px 26px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -5px var(--primary-glow);
+  transition: all 0.2s ease;
+}
+
+.mic-modal-retry-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 25px -5px var(--primary-glow);
+}
+
+.mic-modal-dismiss-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mic-modal-dismiss-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}

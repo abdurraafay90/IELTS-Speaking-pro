@@ -75,6 +75,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [showMicModal, setShowMicModal] = useState(false);
 
   // Part 2 Prep Timer State
   const [isPrepActive, setIsPrepActive] = useState(false);
@@ -270,10 +271,25 @@ function App() {
 
       mediaRecorderRef.current.start(250); // Slice data every 250ms
       setIsRecording(true);
-      setStatus('Recording your response... Speak clearly.');
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      setStatus('Microphone access denied. Please allow microphone permissions in your browser.');
+      const isDenied = 
+        error.name === 'NotAllowedError' || 
+        error.name === 'PermissionDeniedError' || 
+        error.name === 'SecurityError' ||
+        error.message?.toLowerCase().includes('denied') ||
+        error.message?.toLowerCase().includes('permission') ||
+        error.message?.toLowerCase().includes('not allowed');
+
+      if (isDenied) {
+        setShowMicModal(true);
+        setStatus('⚠️ Microphone access is blocked. Please allow permissions in your browser.');
+      } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setShowMicModal(true);
+        setStatus('⚠️ Microphone requires a modern browser and HTTPS / secure context.');
+      } else {
+        setStatus(`Microphone error: ${error.message || 'Could not access audio device.'}`);
+      }
     }
   };
 
@@ -704,6 +720,78 @@ ${evaluation}
           </div>
         )}
       </main>
+
+      {/* Microphone Permission Modal Popup */}
+      {showMicModal && (
+        <div className="mic-modal-overlay" onClick={() => setShowMicModal(false)}>
+          <div className="mic-modal-card" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close-x"
+              onClick={() => setShowMicModal(false)}
+              title="Close popup"
+            >
+              ✕
+            </button>
+
+            <div className="mic-modal-icon-wrapper">
+              <span className="mic-modal-main-icon">🎙️</span>
+              <span className="mic-modal-lock-badge">🔒</span>
+            </div>
+
+            <h3>Microphone Access Blocked</h3>
+            <p className="mic-modal-desc">
+              Your browser has blocked microphone access for this website. To record and evaluate your IELTS response, you must allow microphone access.
+            </p>
+
+            <div className="mic-steps-container">
+              <div className="mic-step-item">
+                <div className="mic-step-number">1</div>
+                <div className="mic-step-text">
+                  <strong>Look at your browser's address bar</strong>
+                  <span>Find the URL at the top (e.g. <em>speaking.araafay.online</em>).</span>
+                </div>
+              </div>
+
+              <div className="mic-step-item">
+                <div className="mic-step-number">2</div>
+                <div className="mic-step-text">
+                  <strong>Click the 🔒 Lock or 🎚️ Settings icon</strong>
+                  <span>Click the icon situated directly on the left side of the web address.</span>
+                </div>
+              </div>
+
+              <div className="mic-step-item">
+                <div className="mic-step-number">3</div>
+                <div className="mic-step-text">
+                  <strong>Change Microphone from "Block" to "Allow"</strong>
+                  <span>Toggle the microphone permission switch to <strong>Allow</strong>.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mic-modal-buttons">
+              <button
+                type="button"
+                className="mic-modal-retry-btn"
+                onClick={() => {
+                  setShowMicModal(false);
+                  startRecording();
+                }}
+              >
+                🔄 Try Again & Start Speaking
+              </button>
+              <button
+                type="button"
+                className="mic-modal-dismiss-btn"
+                onClick={() => setShowMicModal(false)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
