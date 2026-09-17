@@ -7,6 +7,7 @@ import httpx
 import os
 import io
 import json
+import re
 import logging
 import tempfile
 from datetime import datetime, timezone
@@ -262,6 +263,90 @@ async def transcribe_audio_stream(audio_bytes: bytes, filename: str) -> str:
     raise HTTPException(status_code=500, detail=f"Speech transcription failed: {str(last_error)}")
 
 
+# Set of common Whisper / STT hallucinations and artifacts on silence or low background noise
+WHISPER_SILENCE_HALLUCINATIONS = {
+    "thank you", "thank you.", "thank you very much", "thank you very much.",
+    "thank you so much", "thank you so much.", "thanks for watching", 
+    "thanks for watching!", "thank you for watching", "thank you for watching.",
+    "please subscribe", "subscribe", "subtitles by", "transcribed by",
+    "amara.org", "you", "bye", "bye bye", "goodbye", "the end",
+    "[silence]", "[blank_audio]", "[applause]", "[laughter]", "[music]",
+    "(music)", "(bell rings)", "(silence)", "♪", "♫", "so", "yeah", "yes",
+    "no", "okay", "ok", "um", "uh", "huh", "oh", "ah", "hello", "hi"
+}
+
+TESTING_PATTERNS = [
+    r"^test(ing)?(\s+(one|two|three|1|2|3|mic|microphone))+",
+    r"^(can\s+you\s+hear\s+me|is\s+this\s+working|mic\s+check)",
+    r"^(hello\s+hello|check\s+check|1\s+2\s+3)",
+]
+
+def check_hardcoded_meaningless(transcript: str) -> tuple[bool, str]:
+    """
+    Tier 1: 0-token, 0ms hardcoded gatekeeper.
+    Instantly detects empty speech, silence, Whisper static hallucinations, and ultra-brief non-answers.
+    """
+    if not transcript or not transcript.strip() or transcript.strip() == "[Empty Recording]":
+        return True, "The recording was empty or captured only silence."
+
+    clean_text = transcript.strip().lower()
+    normalized = re.sub(r"[^\w\s]", "", clean_text).strip()
+
+    if not normalized:
+        return True, "The recording contained only background noise, clicks, or unidentifiable sound."
+
+    if clean_text in WHISPER_SILENCE_HALLUCINATIONS or normalized in WHISPER_SILENCE_HALLUCINATIONS:
+        return True, "No substantive speech detected (audio contained ambient silence or background artifacts)."
+
+    words = re.findall(r"\b[a-zA-Z0-9']+\b", clean_text)
+    if len(words) < 4:
+        return True, f"Response was too brief ({len(words)} word{'s' if len(words) != 1 else ''}) to evaluate against IELTS criteria. An IELTS response requires complete spoken sentences."
+
+    for pat in TESTING_PATTERNS:
+        if re.search(pat, clean_text):
+            return True, "The recording appears to be a microphone check ('1 2 3' / 'mic test') rather than an attempted answer to the question."
+
+    return False, ""
+
+
+def validate_short_response_with_mini(client: OpenAI, transcript: str, question: str) -> tuple[bool, str]:
+    """
+    Tier 2: Micro-call to gpt-4o-mini (< 50 tokens, ~$0.000005) for borderline / short answers (4 to 14 words).
+    Verifies whether the text is an attempted spoken answer or off-topic chatter / mic test.
+    """
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an IELTS speech gatekeeper. Determine if the candidate's transcript "
+                        "contains an actual attempt to answer the speaking question, or if it is merely "
+                        "off-topic chit-chat, microphone testing, asking if anyone is listening, or filler noise.\n"
+                        "Respond ONLY with valid JSON: {\"is_meaningful\": true/false, \"reason\": \"<short 1-sentence explanation>\"}"
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Question: {question}\nCandidate Transcript: \"{transcript}\""
+                }
+            ],
+            temperature=0.0,
+            max_tokens=60,
+            response_format={"type": "json_object"}
+        )
+        content = completion.choices[0].message.content
+        data = json.loads(content)
+        is_meaningful = bool(data.get("is_meaningful", True))
+        reason = data.get("reason", "The response does not appear to address the target question.")
+        return is_meaningful, reason
+    except Exception as e:
+        logger.warning(f"Mini gatekeeper check skipped due to error: {str(e)}")
+        # If check fails, gracefully default to True so legitimate candidates are never blocked
+        return True, ""
+
+
 async def evaluate_speaking_response(
     transcript: str,
     question: str,
@@ -270,12 +355,48 @@ async def evaluate_speaking_response(
 ) -> dict:
     """
     Evaluate candidate's response against official IELTS Speaking criteria.
+    Employs a multi-tier token-saving pipeline:
+    1. Tier 1: 0-token hardcoded filter for silence, hallucinations, and ultra-short audio.
+    2. Tier 2: Micro-call with gpt-4o-mini (~40 tokens) for short answers (4-14 words).
+    3. Tier 3: Full Senior Examiner evaluation with gpt-5.6-luna only for genuine answers.
     """
-    if not transcript or not transcript.strip() or transcript.strip() == "[Empty Recording]":
+    # 1. Tier 1: Hardcoded pre-filter (Free, 0ms, 0 tokens)
+    is_meaningless, reason = check_hardcoded_meaningless(transcript)
+    if is_meaningless:
+        logger.info(f"🚫 Hardcoded filter rejected non-answer: '{transcript}' -> {reason}")
         return {
-            "transcript": "[Empty Recording]",
-            "evaluation": "### **Overall Band Score: N/A**\n\nThe recording was empty or could not capture clear speech. Please ensure your microphone is enabled and speak clearly into your device."
+            "transcript": transcript if transcript and transcript.strip() else "[Empty Recording]",
+            "evaluation": (
+                f"### **Overall Band Score: N/A**\n\n"
+                f"> ⚠️ **No Spoken Answer Detected**\n>\n"
+                f"> {reason}\n>\n"
+                f"> **Target Question:** *\"{question}\"*\n\n"
+                f"**Tip for IELTS Candidates:** The IELTS examiner requires continuous spoken speech to evaluate Fluency, Lexical Resource, Grammatical Range, and Delivery. Please record a full spoken response (at least 2–4 sentences for Part 1, 1–2 minutes for Part 2)."
+            ),
+            "model_used": "pre-check-filter"
         }
+
+    # 2. Tier 2: Micro-gatekeeper with gpt-4o-mini for borderline / short responses (4 to 14 words)
+    words = re.findall(r"\b[a-zA-Z0-9']+\b", transcript.lower())
+    if 4 <= len(words) <= 14:
+        try:
+            client = get_openai_client()
+            is_meaningful, mini_reason = validate_short_response_with_mini(client, transcript, question)
+            if not is_meaningful:
+                logger.info(f"🚫 gpt-4o-mini gatekeeper rejected short non-answer: '{transcript}' -> {mini_reason}")
+                return {
+                    "transcript": transcript,
+                    "evaluation": (
+                        f"### **Overall Band Score: N/A**\n\n"
+                        f"> ⚠️ **Response Does Not Address Question**\n>\n"
+                        f"> {mini_reason}\n>\n"
+                        f"> **Target Question:** *\"{question}\"*\n\n"
+                        f"**Tip for IELTS Candidates:** Please speak an actual answer to the question. Even a simple 2–3 sentence response will allow the examiner to calculate your band score."
+                    ),
+                    "model_used": "gatekeeper-gpt-4o-mini"
+                }
+        except Exception as e:
+            logger.warning(f"Could not run mini gatekeeper check, proceeding to main model: {e}")
 
     # Default official Senior IELTS Examiner prompt
     system_prompt = custom_system_prompt or """You are a Senior, Official IELTS Speaking Examiner accredited by the British Council and IDP.

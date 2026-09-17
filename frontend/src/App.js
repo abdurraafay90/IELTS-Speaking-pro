@@ -424,6 +424,16 @@ function App() {
         const url = URL.createObjectURL(audioBlobRef.current);
         setAudioUrl(url);
 
+        if (finalDuration < 1) {
+          setIsLoading(false);
+          setStatus('⚠️ Recording too short (< 1s). Please speak your answer.');
+          setTranscript('[Recording under 1 second]');
+          setEvaluation('### **Overall Band Score: N/A**\n\n> ⚠️ **Recording Too Short (< 1s)**\n>\n> The recording was under one second and did not capture your spoken answer. Please tap the microphone, speak your complete response, and tap stop when finished.');
+          const sizeInKB = (audioBlobRef.current.size / 1024).toFixed(1);
+          setRecorderInfo(`Duration: ${formatTime(finalDuration)} | Size: ${sizeInKB} KB [Ignored: < 1s]`);
+          return;
+        }
+
         setIsLoading(true);
         setStatus(finalDuration >= 300
           ? '⏹️ 5-minute limit reached. Transcribing & evaluating speaking...'
