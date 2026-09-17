@@ -68,10 +68,18 @@ function App() {
 
   // Practice & Recording State
   const [ieltsPart, setIeltsPart] = useState('Part 1');
+  const [questionsList, setQuestionsList] = useState(() => {
+    const defaultTest = CAMBRIDGE_TESTS[0];
+    return defaultTest && defaultTest.part_1 ? defaultTest.part_1 : [getRandomQuestion('Part 1')];
+  });
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [question, setQuestion] = useState(() => {
     const defaultTest = CAMBRIDGE_TESTS[0];
-    return defaultTest ? defaultTest.part_1.join('\n\n') : getRandomQuestion('Part 1');
+    return defaultTest && defaultTest.part_1 && defaultTest.part_1.length > 0
+      ? defaultTest.part_1[0]
+      : getRandomQuestion('Part 1');
   });
+  const [isManualQuestionEdit, setIsManualQuestionEdit] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState('Ready to practice');
   const [transcript, setTranscript] = useState('');
@@ -133,22 +141,36 @@ function App() {
   };
 
   // Load Cambridge Test
-  const loadCambridgeTest = (testId, part = ieltsPart) => {
+  const loadCambridgeTest = (testId, part = ieltsPart, targetIndex = 0) => {
     setSelectedCambridgeTestId(testId);
     stopPrepTimer();
+    setIsManualQuestionEdit(false);
     if (!testId) {
-      setQuestion(getRandomQuestion(part));
+      const rand = getRandomQuestion(part);
+      setQuestionsList([rand]);
+      setCurrentQuestionIndex(0);
+      setQuestion(rand);
       return;
     }
     const found = CAMBRIDGE_TESTS.find((t) => t.id === testId);
     if (found) {
+      let list = [];
       if (part === 'Part 1') {
-        setQuestion(found.part_1.join('\n\n'));
+        list = found.part_1 || [];
       } else if (part === 'Part 2') {
-        setQuestion(found.part_2);
+        list = [found.part_2];
       } else if (part === 'Part 3') {
-        setQuestion(found.part_3.join('\n\n'));
+        list = found.part_3 || [];
       }
+      setQuestionsList(list);
+      const safeIndex = Math.min(targetIndex, Math.max(0, list.length - 1));
+      setCurrentQuestionIndex(safeIndex);
+      setQuestion(list[safeIndex] || '');
+      setTranscript('');
+      setEvaluation('');
+      setDuration(null);
+      setAudioUrl(null);
+      setStatus(`Loaded ${found.title} - ${part} (Q${safeIndex + 1})`);
     }
   };
 
@@ -156,24 +178,74 @@ function App() {
   const handlePartChange = (part) => {
     setIeltsPart(part);
     stopPrepTimer();
+    setIsManualQuestionEdit(false);
     if (selectedCambridgeTestId) {
-      loadCambridgeTest(selectedCambridgeTestId, part);
+      loadCambridgeTest(selectedCambridgeTestId, part, 0);
     } else {
-      setQuestion(getRandomQuestion(part));
+      const rand = getRandomQuestion(part);
+      setQuestionsList([rand]);
+      setCurrentQuestionIndex(0);
+      setQuestion(rand);
+      setTranscript('');
+      setEvaluation('');
+      setDuration(null);
+      setAudioUrl(null);
     }
   };
 
   const handleRandomQuestion = () => {
     setSelectedCambridgeTestId('');
-    setQuestion(getRandomQuestion(ieltsPart));
     stopPrepTimer();
+    setIsManualQuestionEdit(false);
+    const rand = getRandomQuestion(ieltsPart);
+    setQuestionsList([rand]);
+    setCurrentQuestionIndex(0);
+    setQuestion(rand);
+    setTranscript('');
+    setEvaluation('');
+    setDuration(null);
+    setAudioUrl(null);
+    setStatus('New random question loaded.');
   };
 
   const handleRandomCambridgeTest = () => {
     const randomIndex = Math.floor(Math.random() * CAMBRIDGE_TESTS.length);
     const randomTest = CAMBRIDGE_TESTS[randomIndex];
     if (randomTest) {
-      loadCambridgeTest(randomTest.id, ieltsPart);
+      loadCambridgeTest(randomTest.id, ieltsPart, 0);
+    }
+  };
+
+  // Navigation between questions (Part 1 and Part 3)
+  const goToQuestion = (index) => {
+    if (index >= 0 && index < questionsList.length) {
+      if (isRecording) {
+        stopRecording();
+      }
+      stopPrepTimer();
+      setCurrentQuestionIndex(index);
+      setQuestion(questionsList[index]);
+      setTranscript('');
+      setEvaluation('');
+      setDuration(null);
+      setAudioUrl(null);
+      setStatus(`Ready to practice Question ${index + 1} of ${questionsList.length}`);
+    }
+  };
+
+  const goToNextQuestion = () => {
+    if (currentQuestionIndex < questionsList.length - 1) {
+      goToQuestion(currentQuestionIndex + 1);
+    } else if (ieltsPart === 'Part 1') {
+      handlePartChange('Part 2');
+    } else if (ieltsPart === 'Part 2') {
+      handlePartChange('Part 3');
+    }
+  };
+
+  const goToPrevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      goToQuestion(currentQuestionIndex - 1);
     }
   };
 
@@ -716,28 +788,163 @@ ${evaluation}
             )}
           </div>
 
-          <div className="input-group">
-            <div className="label-row">
-              <label>IELTS Question / Cue Card Prompt:</label>
-              <div className="action-links">
-                <button type="button" className="action-link-btn" onClick={handleRandomQuestion}>
-                  🎲 Pick Random Question
+          {/* Interactive Question Card / Cue Card Section */}
+          {questionsList.length > 1 ? (
+            <div className="question-interactive-container">
+              {/* Question Navigation Header */}
+              <div className="question-nav-header">
+                <div className="question-nav-meta">
+                  <span className="question-step-badge">
+                    Question {currentQuestionIndex + 1} of {questionsList.length}
+                  </span>
+                  <span className="question-part-pill">{ieltsPart}</span>
+                </div>
+
+                {/* Question Pills (Q1, Q2, Q3, Q4...) */}
+                <div className="question-pills-cluster">
+                  {questionsList.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`q-pill ${idx === currentQuestionIndex ? 'active' : ''}`}
+                      onClick={() => goToQuestion(idx)}
+                      title={`Jump directly to Question ${idx + 1}`}
+                    >
+                      Q{idx + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="action-links">
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={() => setIsManualQuestionEdit(!isManualQuestionEdit)}
+                  >
+                    {isManualQuestionEdit ? '👁️ View Prompt Card' : '✏️ Edit'}
+                  </button>
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={() => copyToClipboard(question, 'Question copied!')}
+                  >
+                    📋 Copy
+                  </button>
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={handleRandomQuestion}
+                    title="Pick random question"
+                  >
+                    🎲 Random
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Question Display Card (No scrollbars!) */}
+              {isManualQuestionEdit ? (
+                <textarea
+                  className="question-edit-textarea"
+                  placeholder="Type or customize your IELTS question here..."
+                  value={question}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setQuestion(val);
+                    const updated = [...questionsList];
+                    updated[currentQuestionIndex] = val;
+                    setQuestionsList(updated);
+                  }}
+                  rows={3}
+                />
+              ) : (
+                <div className="examiner-question-card">
+                  <div className="examiner-quote-icon">🗣️</div>
+                  <div className="examiner-question-content">
+                    <div className="examiner-prefix-label">
+                      Examiner asks (Question {currentQuestionIndex + 1}):
+                    </div>
+                    <h3 className="examiner-question-text">
+                      "{question}"
+                    </h3>
+                  </div>
+                </div>
+              )}
+
+              {/* Prev / Next Navigation Footer */}
+              <div className="question-nav-footer">
+                <button
+                  type="button"
+                  className="btn-nav-prev"
+                  onClick={goToPrevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  title="Go to previous question"
+                >
+                  ← Previous Question
                 </button>
-                <button type="button" className="action-link-btn" onClick={() => copyToClipboard(question, 'Question copied!')}>
-                  📋 Copy Question
-                </button>
-                <button type="button" className="action-link-btn danger" onClick={() => setQuestion('')}>
-                  Clear
+
+                <div className="question-nav-indicator">
+                  {currentQuestionIndex + 1} / {questionsList.length}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-nav-next"
+                  onClick={goToNextQuestion}
+                  disabled={currentQuestionIndex === questionsList.length - 1}
+                  title="Go to next question"
+                >
+                  Next Question →
                 </button>
               </div>
             </div>
-            <textarea
-              placeholder="Paste or type your IELTS question / cue card here..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              rows={ieltsPart === 'Part 2' ? 6 : 3}
-            />
-          </div>
+          ) : (
+            <div className="part2-cue-card-container">
+              <div className="label-row">
+                <label>{ieltsPart === 'Part 2' ? 'IELTS Part 2 Cue Card Prompt:' : 'IELTS Question Prompt:'}</label>
+                <div className="action-links">
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={() => setIsManualQuestionEdit(!isManualQuestionEdit)}
+                  >
+                    {isManualQuestionEdit ? '👁️ View Card' : '✏️ Edit'}
+                  </button>
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={() => copyToClipboard(question, 'Question copied!')}
+                  >
+                    📋 Copy
+                  </button>
+                  <button
+                    type="button"
+                    className="action-link-btn"
+                    onClick={handleRandomQuestion}
+                  >
+                    🎲 Random
+                  </button>
+                </div>
+              </div>
+
+              {isManualQuestionEdit ? (
+                <textarea
+                  placeholder="Paste or type question / cue card..."
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  rows={ieltsPart === 'Part 2' ? 6 : 3}
+                />
+              ) : (
+                <div className="cue-card-display-card">
+                  <div className="cue-card-top-tag">
+                    {ieltsPart === 'Part 2' ? '📋 Candidate Long-Turn Cue Card (Speak for 1–2 Minutes)' : '🗣️ Examiner Question Prompt'}
+                  </div>
+                  <div className="cue-card-formatted-body">
+                    {question}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Optional Prompt Customizer Drawer */}
           <div className="prompt-toggle-row">
@@ -955,19 +1162,38 @@ ${evaluation}
             <button className="action-button download-btn" onClick={saveReport}>
               💾 Download Complete IELTS Report (.md)
             </button>
-            <button
-              className="action-button next-btn"
-              onClick={() => {
-                handleRandomQuestion();
-                setTranscript('');
-                setEvaluation('');
-                setDuration(null);
-                setAudioUrl(null);
-                setStatus('Ready to practice next question');
-              }}
-            >
-              🚀 Practice Next Question
-            </button>
+
+            {currentQuestionIndex < questionsList.length - 1 ? (
+              <button
+                className="action-button next-btn highlight-pulse"
+                onClick={() => {
+                  goToNextQuestion();
+                  window.scrollTo({ top: 400, behavior: 'smooth' });
+                }}
+              >
+                ➡️ Proceed to Question {currentQuestionIndex + 2} of {questionsList.length} →
+              </button>
+            ) : (
+              <button
+                className="action-button next-btn"
+                onClick={() => {
+                  if (ieltsPart === 'Part 1') {
+                    handlePartChange('Part 2');
+                  } else if (ieltsPart === 'Part 2') {
+                    handlePartChange('Part 3');
+                  } else {
+                    handleRandomQuestion();
+                  }
+                  window.scrollTo({ top: 350, behavior: 'smooth' });
+                }}
+              >
+                {ieltsPart === 'Part 1'
+                  ? '🎯 Part 1 Complete! Proceed to Part 2 (Cue Card) →'
+                  : ieltsPart === 'Part 2'
+                  ? '🎯 Part 2 Complete! Proceed to Part 3 (Discussion) →'
+                  : '🚀 Practice Next Question'}
+              </button>
+            )}
           </div>
         )}
       </main>
