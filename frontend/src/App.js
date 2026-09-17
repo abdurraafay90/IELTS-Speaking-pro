@@ -64,7 +64,7 @@ function App() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Cambridge IELTS Selection State
-  const [selectedCambridgeTestId, setSelectedCambridgeTestId] = useState('cambridge-19-test-1');
+  const [selectedCambridgeTestId, setSelectedCambridgeTestId] = useState('cambridge-21-test-1');
 
   // Practice & Recording State
   const [ieltsPart, setIeltsPart] = useState('Part 1');
@@ -632,11 +632,19 @@ ${evaluation}
                 onChange={(e) => loadCambridgeTest(e.target.value)}
               >
                 <option value="">-- Custom / Manual Question Entry --</option>
-                {CAMBRIDGE_TESTS.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    📖 {t.title}
-                  </option>
-                ))}
+                {[21, 20, 19, 18, 17, 16, 15, 14].map((bookNum) => {
+                  const testsForBook = CAMBRIDGE_TESTS.filter((t) => t.book === bookNum);
+                  if (!testsForBook.length) return null;
+                  return (
+                    <optgroup key={bookNum} label={`📚 Cambridge IELTS ${bookNum}`}>
+                      {testsForBook.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          📖 {t.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
             </div>
           </div>
