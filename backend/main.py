@@ -22,7 +22,7 @@ logger = logging.getLogger("ielts_backend")
 APP_PASSWORD = os.getenv("APP_PASSWORD", "speaking30").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_EVAL_MODEL = os.getenv("OPENAI_EVAL_MODEL", "gpt-4o").strip()
-OPENAI_TRANSCRIBE_MODEL = os.getenv("OPENAI_TRANSCRIBE_MODEL", "whisper-1").strip()
+OPENAI_TRANSCRIBE_MODEL = os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-transcribe").strip()
 
 def get_openai_client():
     api_key = os.getenv("OPENAI_API_KEY", "").strip()

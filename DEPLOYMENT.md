@@ -39,7 +39,7 @@ In the **Environment Variables** section on Vercel, add the following variables:
 | `OPENAI_API_KEY` | `sk-...` | Your personal OpenAI API key (credits expiring Oct 1) |
 | `APP_PASSWORD` | `speaking30` | Access password required to use the app |
 | `OPENAI_EVAL_MODEL` | `gpt-4o` | Senior examiner model (`gpt-4o` or `gpt-4o-mini`) |
-| `OPENAI_TRANSCRIBE_MODEL` | `whisper-1` | Audio transcription model |
+| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-transcribe` | Audio transcription model (high-accuracy) |
 
 Click **"Deploy"**. Vercel will build the frontend and serverless function in about 1–2 minutes.
 

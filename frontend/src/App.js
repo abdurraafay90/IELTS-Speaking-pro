@@ -54,7 +54,9 @@ REQUIRED OUTPUT FORMAT (Markdown):
 function App() {
   // Authentication State
   const [authToken, setAuthToken] = useState(() => localStorage.getItem('ielts_auth_key') || '');
+  const [username, setUsername] = useState(() => localStorage.getItem('ielts_username') || '');
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('ielts_auth_key')));
+  const [loginUsername, setLoginUsername] = useState(() => localStorage.getItem('ielts_username') || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -88,6 +90,10 @@ function App() {
   // Handle Authentication
   const handleLogin = (e) => {
     e?.preventDefault();
+    if (!loginUsername.trim()) {
+      setLoginError('Please enter your name or username.');
+      return;
+    }
     if (!loginPassword.trim()) {
       setLoginError('Please enter the access password.');
       return;
@@ -96,7 +102,9 @@ function App() {
     // Default expected password is speaking30
     if (loginPassword.trim() === 'speaking30') {
       localStorage.setItem('ielts_auth_key', loginPassword.trim());
+      localStorage.setItem('ielts_username', loginUsername.trim());
       setAuthToken(loginPassword.trim());
+      setUsername(loginUsername.trim());
       setIsAuthenticated(true);
       setLoginError('');
     } else {
@@ -106,9 +114,12 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('ielts_auth_key');
+    localStorage.removeItem('ielts_username');
     setAuthToken('');
+    setUsername('');
     setIsAuthenticated(false);
     setLoginPassword('');
+    setLoginUsername('');
     setLoginError('');
   };
 
@@ -340,6 +351,7 @@ function App() {
 
   const saveReport = () => {
     const content = `# IELTS Speaking Practice Report
+Candidate: ${username || 'Candidate'}
 Date: ${new Date().toLocaleString()}
 Section: ${ieltsPart}
 Duration: ${formatTime(duration || 0)}
@@ -360,7 +372,7 @@ ${evaluation}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `IELTS_Report_${ieltsPart.replace(/\s+/g, '_')}_${Date.now()}.md`;
+    a.download = `IELTS_Report_${(username || 'Candidate').replace(/\s+/g, '_')}_${ieltsPart.replace(/\s+/g, '_')}_${Date.now()}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -372,7 +384,7 @@ ${evaluation}
     alert(message || 'Copied to clipboard!');
   };
 
-  // --- 1. Single Sign-In Password Gate ---
+  // --- 1. Single Sign-In Gate with Username & Password ---
   if (!isAuthenticated) {
     return (
       <div className="login-screen">
@@ -381,29 +393,49 @@ ${evaluation}
           <div className="login-icon">🎙️</div>
           <h2>IELTS Speaking Pro</h2>
           <p className="login-subtitle">
-            Enter the authorized access password to unlock speech evaluation.
+            Enter your name and the authorized access password to begin practicing.
           </p>
 
           <form onSubmit={handleLogin} className="login-form">
-            <div className="password-input-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter access password"
-                value={loginPassword}
-                onChange={(e) => {
-                  setLoginPassword(e.target.value);
-                  setLoginError('');
-                }}
-                autoFocus
-              />
-              <button
-                type="button"
-                className="toggle-pw-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? '👁️' : '🔒'}
-              </button>
+            <div className="login-field-group">
+              <label>Candidate Name / Username:</label>
+              <div className="input-with-icon">
+                <span className="input-field-icon">👤</span>
+                <input
+                  type="text"
+                  placeholder="Enter your name (e.g. Alex)"
+                  value={loginUsername}
+                  onChange={(e) => {
+                    setLoginUsername(e.target.value);
+                    setLoginError('');
+                  }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="login-field-group">
+              <label>Access Password:</label>
+              <div className="password-input-wrapper input-with-icon">
+                <span className="input-field-icon">🔑</span>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter password (speaking30)"
+                  value={loginPassword}
+                  onChange={(e) => {
+                    setLoginPassword(e.target.value);
+                    setLoginError('');
+                  }}
+                />
+                <button
+                  type="button"
+                  className="toggle-pw-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '👁️' : '🔒'}
+                </button>
+              </div>
             </div>
 
             {loginError && <div className="login-error-msg">{loginError}</div>}
@@ -414,7 +446,7 @@ ${evaluation}
           </form>
 
           <div className="login-footer">
-            <span>Powered by OpenAI GPT-4o & Whisper</span>
+            <span>Powered by OpenAI GPT-4o & GPT-4o-Transcribe</span>
           </div>
         </div>
       </div>
@@ -427,12 +459,18 @@ ${evaluation}
       {/* Top Header Bar */}
       <header className="app-header">
         <div className="header-meta-row">
-          <div className="status-pill">
-            <span className="pulsing-dot"></span> Authorized Beta
+          <div className="candidate-badge">
+            <span className="candidate-icon">👤</span>
+            <span className="candidate-text">Candidate: <strong>{username || 'Friend'}</strong></span>
           </div>
-          <button className="signout-button" onClick={handleLogout} title="Lock and return to password screen">
-            Sign Out (Lock)
-          </button>
+          <div className="header-right-meta">
+            <div className="status-pill">
+              <span className="pulsing-dot"></span> Authorized Access
+            </div>
+            <button className="signout-button" onClick={handleLogout} title="Sign out and return to login screen">
+              Sign Out
+            </button>
+          </div>
         </div>
 
         <div className="brand-badge">Official IELTS Criteria</div>
