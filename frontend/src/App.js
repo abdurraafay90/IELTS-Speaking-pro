@@ -8,10 +8,10 @@ const DEFAULT_SYSTEM_PROMPT = `You are a Senior, Official IELTS Speaking Examine
 Your mission is to rigorously and constructively evaluate a candidate's transcribed spoken response in accordance with the official IELTS Speaking Public Band Descriptors.
 
 EVALUATION PILLARS (Band 0.0 - 9.0 in 0.5 increments):
-1. Fluency and Coherence (FC): Continuity, speech rate, natural flow, appropriate use of discourse markers, absence of unnatural self-correction or excessive hesitation.
+1. Fluency and Coherence (FC): Continuity, speech rate, natural flow, appropriate use of discourse markers, absence of unnatural self-correction or excessive hesitation. Actively analyze spoken filler words ('um', 'uh', 'er', 'like', 'you know'), repetitions, stutters, false starts, and mid-sentence stalling.
 2. Lexical Resource (LR): Range, precision, flexibility, idiomatic collocations, sophistication, paraphrasing ability, and natural word choice.
 3. Grammatical Range and Accuracy (GRA): Use of compound and complex sentence structures, conditional clauses, relative clauses, tense consistency, and structural variety.
-4. Pronunciation & Delivery Insights (P): Based on transcription clarity, rhythm markers, pause indicators, and cadence.
+4. Spoken Delivery, Tone & Natural Expression (P): Cadence, sentence rhythm, discourse intonation, emotional engagement, clarity, naturalness of expression, and hesitation markers. Note any robotic tone or unnatural pauses.
 
 PART-SPECIFIC BENCHMARKS:
 - Part 1 (Introduction & Interview): Answers should be natural, direct, and concise (2-4 sentences, ~20-30s), extending with a reason or concrete example without over-rambling.
@@ -20,19 +20,20 @@ PART-SPECIFIC BENCHMARKS:
 
 IMPORTANT CONSTRAINTS & STT TOLERANCE:
 - Account for Speech-to-Text (STT) glitches: If a transcribed word is odd but phonetically sounds like a logical English word in context, evaluate their intended linguistic competence and do not penalize unfairly.
+- If repeated filler words, stutters, or false starts appear in the transcript, provide constructive feedback on how to replace them with natural discourse connectives.
 - Maintain an encouraging yet realistic standard. Be exact with Band Scores.
 
 REQUIRED OUTPUT FORMAT (Markdown):
 ### **Overall Band Score: [e.g. 7.5 / 9.0]**
 
 #### **Examiner Summary:**
-[A concise 2-sentence executive summary of the candidate's performance and primary strength.]
+[A concise 2-sentence executive summary of the candidate's performance, delivery flow, and primary strength.]
 
 #### **Criteria Breakdown:**
-- **Fluency & Coherence:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Lexical Resource:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Grammatical Range & Accuracy:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Spoken Delivery & Pronunciation Notes:** **[Score]/9.0** — [Notes on cadence, sentence length, and speech flow]
+- **Fluency & Coherence:** **[Score]/9.0** — [Specific diagnostic feedback on continuity, filler words, and flow]
+- **Lexical Resource:** **[Score]/9.0** — [Specific diagnostic feedback on vocabulary range and collocations]
+- **Grammatical Range & Accuracy:** **[Score]/9.0** — [Specific diagnostic feedback on sentence complexity and error density]
+- **Delivery, Stutters & Expression Notes:** **[Score]/9.0** — [Detailed notes on pauses, stutters, filler words ('um/uh'), cadence, and natural communicative delivery]
 
 #### **Key Strengths:**
 - [Specific strength demonstrated in the answer]
@@ -315,6 +316,19 @@ function App() {
       timerIntervalRef.current = setInterval(() => {
         timerRef.current += 1;
         setTimer(timerRef.current);
+
+        // Hard Credit Protection Limit: 5 minutes (300 seconds)
+        if (timerRef.current >= 300) {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            try {
+              mediaRecorderRef.current.stop();
+            } catch (err) {
+              console.error('Auto-stop error at 5-min limit:', err);
+            }
+            setIsRecording(false);
+            setStatus('⏹️ 5-minute maximum limit reached! Recording automatically stopped & sent for examiner evaluation to protect OpenAI credits.');
+          }
+        }
       }, 1000);
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -336,16 +350,21 @@ function App() {
         setAudioUrl(url);
 
         setIsLoading(true);
-        setStatus('Transcribing speech & analyzing examiner criteria...');
+        setStatus(finalDuration >= 300
+          ? '⏹️ 5-minute limit reached. Transcribing & evaluating speaking...'
+          : 'Transcribing speech & analyzing examiner criteria...');
 
         const result = await sendAudioForProcessing(audioBlobRef.current);
         setTranscript(result.transcript || 'No transcript generated.');
         setEvaluation(result.evaluation || 'No evaluation received.');
         setIsLoading(false);
-        setStatus('Evaluation completed!');
+        setStatus(finalDuration >= 300
+          ? 'Evaluation completed! (Auto-capped at 5m max limit)'
+          : 'Evaluation completed!');
 
         const sizeInKB = (audioBlobRef.current.size / 1024).toFixed(1);
-        setRecorderInfo(`Duration: ${formatTime(finalDuration)} | Size: ${sizeInKB} KB`);
+        const limitTag = finalDuration >= 300 ? ' [Capped at 5:00]' : '';
+        setRecorderInfo(`Duration: ${formatTime(finalDuration)}${limitTag} | Size: ${sizeInKB} KB`);
       };
 
       mediaRecorderRef.current.start(250); // Slice data every 250ms
@@ -391,6 +410,14 @@ function App() {
 
   // API Call with Authentication Header & Fallback URL
   const sendAudioForProcessing = async (blob) => {
+    // Safety guard: reject if audio blob is > 15MB (~5-minute ceiling)
+    if (blob.size > 15 * 1024 * 1024) {
+      return {
+        transcript: 'Recording aborted: audio file exceeded 15MB safety threshold (~5 minutes).',
+        evaluation: '### Recording Limit Exceeded\n\nThe recording file size exceeded the maximum safety threshold (15MB) to protect OpenAI credits. Please keep your response under 5 minutes.'
+      };
+    }
+
     const formData = new FormData();
     const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
     formData.append('audio_file', blob, `recording.${ext}`);
@@ -741,14 +768,27 @@ ${evaluation}
               <span className="mic-icon">🎙️</span>
             </div>
 
-            <div className={`timer-display ${isRecording ? 'active' : ''}`}>
-              {isRecording ? formatTime(timer) : (duration ? `Duration: ${formatTime(duration)}` : '0:00')}
+            <div className={`timer-display ${isRecording ? 'active' : ''} ${isRecording && timer >= 270 ? 'warning' : ''}`}>
+              {isRecording ? (
+                <>
+                  {formatTime(timer)} <span className="timer-max">/ 5:00 max</span>
+                </>
+              ) : (
+                duration ? `Duration: ${formatTime(duration)}` : '0:00'
+              )}
             </div>
+
+            {isRecording && timer >= 270 && (
+              <div className="limit-warning-badge">
+                ⚠️ Approaching 5-minute limit: auto-stop in {300 - timer}s (credit protection)
+              </div>
+            )}
 
             <div className="target-pace-hint">
               {ieltsPart === 'Part 1' && 'Target: 20–35s per answer'}
               {ieltsPart === 'Part 2' && 'Target: 1m 45s – 2m 00s'}
               {ieltsPart === 'Part 3' && 'Target: 40–60s per answer'}
+              <span className="limit-safe-tag"> • 🛡️ 5-min auto-stop active</span>
             </div>
           </div>
 

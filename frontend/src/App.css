@@ -1471,3 +1471,55 @@ body {
   color: #f8fafc;
   padding: 8px;
 }
+
+/* ==========================================================================
+   11. 5-Minute Credit Protection Limit Styles
+   ========================================================================== */
+.timer-max {
+  font-size: 1.15rem;
+  opacity: 0.65;
+  font-weight: 500;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.timer-display.warning {
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.3) !important;
+  animation: pulseTimerWarning 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulseTimerWarning {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.02);
+  }
+}
+
+.limit-warning-badge {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+  animation: pulseRing 1.5s infinite;
+}
+
+.limit-safe-tag {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

@@ -19,6 +19,7 @@ APP_PASSWORD = os.getenv("APP_PASSWORD", "speaking30").strip()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_EVAL_MODEL = os.getenv("OPENAI_EVAL_MODEL", "gpt-4o").strip()
 OPENAI_TRANSCRIBE_MODEL = os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-transcribe").strip()
+MAX_AUDIO_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB hard limit (~5 minutes of speech audio)
 
 def get_openai_client():
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -144,10 +145,10 @@ async def evaluate_speaking_response(
 Your mission is to rigorously and constructively evaluate a candidate's transcribed spoken response in accordance with the official IELTS Speaking Public Band Descriptors.
 
 EVALUATION PILLARS (Band 0.0 - 9.0 in 0.5 increments):
-1. Fluency and Coherence (FC): Continuity, speech rate, natural flow, appropriate use of discourse markers, absence of unnatural self-correction or excessive hesitation.
+1. Fluency and Coherence (FC): Continuity, speech rate, natural flow, appropriate use of discourse markers, absence of unnatural self-correction or excessive hesitation. Actively analyze spoken filler words ('um', 'uh', 'er', 'like', 'you know'), repetitions, stutters, false starts, and mid-sentence stalling.
 2. Lexical Resource (LR): Range, precision, flexibility, idiomatic collocations, sophistication, paraphrasing ability, and natural word choice.
 3. Grammatical Range and Accuracy (GRA): Use of compound and complex sentence structures, conditional clauses, relative clauses, tense consistency, and structural variety.
-4. Pronunciation & Delivery Insights (P): Based on transcription clarity, rhythm markers, pause indicators, and cadence.
+4. Spoken Delivery, Tone & Natural Expression (P): Cadence, sentence rhythm, discourse intonation, emotional engagement, clarity, naturalness of expression, and hesitation markers. Note any robotic tone or unnatural pauses.
 
 PART-SPECIFIC BENCHMARKS:
 - Part 1 (Introduction & Interview): Answers should be natural, direct, and concise (2-4 sentences, ~20-30s), extending with a reason or concrete example without over-rambling.
@@ -156,19 +157,20 @@ PART-SPECIFIC BENCHMARKS:
 
 IMPORTANT CONSTRAINTS & STT TOLERANCE:
 - Account for Speech-to-Text (STT) glitches: If a transcribed word is odd but phonetically sounds like a logical English word in context (e.g. 'candidacy' -> 'candidate see', 'there' -> 'their'), evaluate their intended linguistic competence and do not penalize unfairly.
+- If repeated filler words, stutters, or false starts appear in the transcript, provide constructive feedback on how to replace them with natural discourse connectives.
 - Maintain an encouraging yet realistic standard. Be exact with Band Scores.
 
 REQUIRED OUTPUT FORMAT (Markdown):
 ### **Overall Band Score: [e.g. 7.5 / 9.0]**
 
 #### **Examiner Summary:**
-[A concise 2-sentence executive summary of the candidate's performance and primary strength.]
+[A concise 2-sentence executive summary of the candidate's performance, delivery flow, and primary strength.]
 
 #### **Criteria Breakdown:**
-- **Fluency & Coherence:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Lexical Resource:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Grammatical Range & Accuracy:** **[Score]/9.0** — [Specific diagnostic feedback]
-- **Spoken Delivery & Pronunciation Notes:** **[Score]/9.0** — [Notes on cadence, sentence length, and speech flow]
+- **Fluency & Coherence:** **[Score]/9.0** — [Specific diagnostic feedback on continuity, filler words, and flow]
+- **Lexical Resource:** **[Score]/9.0** — [Specific diagnostic feedback on vocabulary range and collocations]
+- **Grammatical Range & Accuracy:** **[Score]/9.0** — [Specific diagnostic feedback on sentence complexity and error density]
+- **Delivery, Stutters & Expression Notes:** **[Score]/9.0** — [Detailed notes on pauses, stutters, filler words ('um/uh'), cadence, and natural communicative delivery]
 
 #### **Key Strengths:**
 - [Specific strength demonstrated in the answer]
@@ -240,6 +242,11 @@ async def transcribe_endpoint(
         content = await audio_file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+        if len(content) > MAX_AUDIO_SIZE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio file exceeds the maximum 5-minute limit (15MB ceiling). Size was {len(content) / (1024*1024):.1f}MB. Upload aborted to protect OpenAI credits."
+            )
         transcript = await transcribe_audio_stream(content, audio_file.filename)
         return {"transcript": transcript}
     except HTTPException:
@@ -262,6 +269,11 @@ async def transcribe_and_score_endpoint(
         content = await audio_file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+        if len(content) > MAX_AUDIO_SIZE_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio file exceeds the maximum 5-minute limit (15MB ceiling). Size was {len(content) / (1024*1024):.1f}MB. Upload aborted to protect OpenAI credits."
+            )
 
         # 1. Transcribe audio stream in-memory
         transcript = await transcribe_audio_stream(content, audio_file.filename)
