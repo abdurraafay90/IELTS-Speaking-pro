@@ -8,6 +8,7 @@ import os
 import io
 import json
 import re
+import base64
 import logging
 import tempfile
 from datetime import datetime, timezone
@@ -141,6 +142,69 @@ async def health_check():
 
 
 IN_MEMORY_LOGINS = []
+GITHUB_REPO = os.getenv("GITHUB_REPO", "abdurraafay90/IELTS-Speaking-pro").strip()
+GITHUB_LOG_BRANCH = os.getenv("GITHUB_LOG_BRANCH", "main").strip()
+GITHUB_LOG_PATH = "candidate_logins.txt"
+
+
+def sync_login_to_github(entry: str) -> bool:
+    """
+    Persistently commit candidate logins directly to candidate_logins.txt in GitHub repo.
+    This guarantees permanent retention even when Vercel serverless containers restart.
+    """
+    token = os.getenv("GITHUB_TOKEN", "").strip()
+    if not token:
+        logger.info("ℹ️ GITHUB_TOKEN not configured. Logins stored in local/container storage.")
+        return False
+
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_LOG_PATH}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "IELTS-Speaking-Pro-Logger"
+    }
+
+    try:
+        existing_text = ""
+        sha = None
+
+        with httpx.Client(timeout=10.0) as client:
+            get_res = client.get(f"{url}?ref={GITHUB_LOG_BRANCH}", headers=headers)
+            if get_res.status_code == 200:
+                data = get_res.json()
+                sha = data.get("sha")
+                raw_b64 = data.get("content", "").replace("\n", "")
+                existing_text = base64.b64decode(raw_b64).decode("utf-8", errors="ignore")
+            elif get_res.status_code != 404:
+                logger.warning(f"Could not read {GITHUB_LOG_PATH} from GitHub: {get_res.status_code}")
+                return False
+
+            if not existing_text.strip():
+                updated_content = f"# Candidate Logins Log (IELTS Speaking Pro)\n\n{entry}"
+            else:
+                updated_content = existing_text.rstrip("\n") + "\n" + entry
+
+            new_b64 = base64.b64encode(updated_content.encode("utf-8")).decode("utf-8")
+            payload = {
+                "message": f"log(candidate): {entry.strip().split('|')[0]}",
+                "content": new_b64,
+                "branch": GITHUB_LOG_BRANCH
+            }
+            if sha:
+                payload["sha"] = sha
+
+            put_res = client.put(url, headers=headers, json=payload)
+            if put_res.status_code in (200, 201):
+                logger.info(f"✅ Successfully committed candidate login to GitHub repo ({GITHUB_LOG_PATH})")
+                return True
+            else:
+                logger.warning(f"Failed to commit login to GitHub: {put_res.status_code} {put_res.text}")
+                return False
+    except Exception as e:
+        logger.warning(f"GitHub login sync error: {str(e)}")
+        return False
+
 
 def record_candidate_login(name: str, client_ip: str = "unknown", user_agent: str = ""):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -161,7 +225,36 @@ def record_candidate_login(name: str, client_ip: str = "unknown", user_agent: st
         except Exception:
             pass
 
+    # Automatically commit to GitHub if GITHUB_TOKEN is set
+    try:
+        sync_login_to_github(entry)
+    except Exception as e:
+        logger.warning(f"sync_login_to_github call failed: {e}")
+
+
 def get_all_recorded_logins() -> str:
+    # 1. Attempt to fetch master permanent log file directly from GitHub
+    token = os.getenv("GITHUB_TOKEN", "").strip()
+    if token:
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_LOG_PATH}?ref={GITHUB_LOG_BRANCH}"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "IELTS-Speaking-Pro-Logger"
+            }
+            with httpx.Client(timeout=10.0) as client:
+                res = client.get(url, headers=headers)
+                if res.status_code == 200:
+                    raw_b64 = res.json().get("content", "").replace("\n", "")
+                    github_text = base64.b64decode(raw_b64).decode("utf-8", errors="ignore")
+                    if github_text.strip():
+                        return github_text
+        except Exception as e:
+            logger.warning(f"Could not load logins from GitHub: {e}")
+
+    # 2. Fallback to in-memory + local file
     lines = list(IN_MEMORY_LOGINS)
     paths = [
         os.path.join(tempfile.gettempdir(), "candidate_logins.txt"),
